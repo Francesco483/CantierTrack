@@ -23,10 +23,12 @@ DATA_DIR = Path(__file__).parent.parent / "data"
 DATA_DIR.mkdir(exist_ok=True)
 
 TIMEOUT = 60  # secondi
-HEADERS = {"User-Agent": "BuildingRadarItalia/1.0 (github.com; open-data aggregator)"}
+HEADERS = {"User-Agent": "CantierTrack/1.0 (github.com; open-data aggregator)"}
 MAX_ROWS = 15000  # per fonte
 
 # ── Fonti ─────────────────────────────────────────────────────
+# Solo fonti con bandi ATTIVI — gli Atti MIT sono archivi storici
+# di gare già concluse, quindi esclusi
 FONTI = [
     {
         "id": "mit_bandi",
@@ -36,18 +38,11 @@ FONTI = [
         "ente": "MIT",
     },
     {
-        "id": "mit_atti_2024",
-        "nome": "MIT SCP — Atti 2024",
-        "url": "https://dati.mit.gov.it/scp/v_od_atti_2024.csv",
-        "parser": "mit_atti",
-        "ente": "MIT",
-    },
-    {
-        "id": "mit_atti_2023",
-        "nome": "MIT SCP — Atti 2023",
-        "url": "https://dati.mit.gov.it/scp/v_od_atti_2023.csv",
-        "parser": "mit_atti",
-        "ente": "MIT",
+        "id": "anac_cig_2025_05",
+        "nome": "ANAC BandiCIG — Mag 2025",
+        "url": "https://dati.anticorruzione.it/opendata/download/dataset/cig-2025/filesystem/cig_csv_2025_05.csv",
+        "parser": "anac_cig",
+        "ente": "ANAC",
     },
     {
         "id": "anac_cig_2025_04",
@@ -124,6 +119,14 @@ def parse_mit_bandi(rows: list[dict], fonte: dict) -> list[dict]:
         imp = pfloat(r.get("importo", "0"))
         if imp <= 0:
             continue
+        # Stato reale dal CSV — se non presente considera attivo
+        stato_raw = (r.get("stato_bando") or r.get("stato") or "").upper()
+        if "SCAD" in stato_raw or "CHIUSO" in stato_raw or "ANNULL" in stato_raw:
+            stato = "completato"
+        elif "SOSP" in stato_raw:
+            stato = "sospeso"
+        else:
+            stato = "attivo"  # PUBBLICATO, IN CORSO, o vuoto → attivo
         items.append({
             "nome": r.get("oggetto") or "Bando SCP",
             "citta": r.get("luogo_esecuzione") or "—",
@@ -131,7 +134,7 @@ def parse_mit_bandi(rows: list[dict], fonte: dict) -> list[dict]:
             "indirizzo": r.get("luogo_esecuzione") or "—",
             "lat": None, "lng": None,
             "valore": imp,
-            "stato": "attivo",
+            "stato": stato,
             "tipo": r.get("tipo_bando") or "Lavori",
             "tipoIntervento": r.get("tipo_intervento") or "—",
             "inizio": r.get("data_pubb_bando_scp") or "—",
