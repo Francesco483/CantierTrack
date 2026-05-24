@@ -1,0 +1,38 @@
+name: Aggiorna dati cantieri
+
+on:
+  schedule:
+    # Ogni giorno alle 06:00 UTC (08:00 ora italiana)
+    - cron: '0 6 * * *'
+  # Permette di avviare manualmente dal tab "Actions" su GitHub
+  workflow_dispatch:
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # necessario per fare commit nel repo
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Installa dipendenze
+        run: pip install requests
+
+      - name: Scarica dati da MIT e ANAC
+        run: python scripts/fetch_cantieri.py
+
+      - name: Commit e push dati aggiornati
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/cantieri.json data/manifest.json
+          # Committa solo se ci sono modifiche
+          git diff --staged --quiet || git commit -m "chore: aggiorna dati cantieri $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git push
