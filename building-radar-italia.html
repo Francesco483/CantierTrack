@@ -452,8 +452,8 @@ function selectCantiere(id){
 
 // ── SORGENTI DATI ────────────────────────────────────────────
 // URL del JSON aggiornato quotidianamente da GitHub Actions
-// Sostituisci TUO_USERNAME con il tuo username GitHub dopo il deploy
-const GITHUB_DATA_URL = 'https://raw.githubusercontent.com/TUO_USERNAME/building-radar-italia/main/data/cantieri.json';
+// Sostituisci Francesco483 con il tuo username GitHub dopo il deploy
+const GITHUB_DATA_URL = 'https://raw.githubusercontent.com/Francesco483/building-radar-italia/main/data/cantieri.json';
 
 async function fetchFonte(fonteId) {
   // Non usato direttamente — i dati arrivano tutti da fetchAllFromGitHub()
@@ -775,7 +775,7 @@ async function caricaFontiSelezionate(){
 
   } catch(e) {
     let msg = e.message || 'Errore sconosciuto';
-    if(msg.includes('TUO_USERNAME')){
+    if(msg.includes('Francesco483')){
       msg = '⚠ Configura GITHUB_DATA_URL con il tuo username GitHub nel codice sorgente.';
     } else if(msg.includes('Failed to fetch') || msg.includes('NetworkError')){
       msg = '❌ Impossibile raggiungere GitHub. Controlla la connessione.';
