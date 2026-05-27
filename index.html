@@ -488,7 +488,10 @@ async function cercaInfoAI(id){
       throw new Error(e.detail||'Errore '+resp.status);
     }
     const data=await resp.json();
-    resultDiv.innerHTML=data.html||'<span style="color:var(--muted);">Nessuna informazione trovata.</span>';
+    // Rimuovi eventuali backtick markdown rimasti
+    let html = data.html || 'Nessuna informazione trovata.';
+    html = html.replace(/```html/g,'').replace(/```/g,'').trim();
+    resultDiv.innerHTML = html;
   }catch(e){
     resultDiv.innerHTML=`<span style="color:var(--red);">❌ ${e.message}</span>`;
   }
