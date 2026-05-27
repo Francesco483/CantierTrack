@@ -336,10 +336,10 @@ function renderTable(){
 }
 
 function selectCantiere(id){
-  // Cerca per ID sia come numero che come stringa
-  const c=allCantieri.find(x=>x.id==id || x.id===id);
+  const numId = Number(id);
+  const c = allCantieri.find(x => Number(x.id) === numId);
   if(!c) return;
-  selectedId=c.id;
+  selectedId = numId;
   document.getElementById('detail-empty').style.display='none';
   document.getElementById('detail-content').style.display='flex';
   document.getElementById('d-nome').textContent=c.nome||'—';
@@ -365,14 +365,14 @@ function selectCantiere(id){
     </div>`).join('')
     +(c.url?`<div style="margin-top:12px;"><a href="${c.url}" target="_blank" style="color:var(--blue);font-size:12px;">🔗 Apri documento ufficiale</a></div>`:'')
     +`<div style="margin-top:12px;">
-      <button onclick="cercaInfoAI(${JSON.stringify(c.id)})" class="btn btn-purple" style="width:100%;justify-content:center;padding:9px;">
+      <button onclick="cercaInfoAI(${numId})" class="btn btn-purple" style="width:100%;justify-content:center;padding:9px;">
         🤖 Cerca informazioni con AI
       </button>
       <div id="ai-info-result" style="margin-top:10px;font-size:12px;color:var(--muted);line-height:1.6;display:none;"></div>
     </div>`;
-  // Aggiorna solo la card attiva senza re-render tutta la lista
+  // Aggiorna evidenziazione nella lista
   document.querySelectorAll('.card').forEach(el=>el.classList.remove('active'));
-  const activeCard=document.querySelector(`.card[data-id="${c.id}"]`);
+  const activeCard=document.querySelector(`.card[data-id="${numId}"]`);
   if(activeCard) activeCard.classList.add('active');
 }
 
