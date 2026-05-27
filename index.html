@@ -364,8 +364,11 @@ function selectCantiere(id){
       <span class="detail-val">${r[1]}</span>
     </div>`).join('')
     +(c.url?`<div style="margin-top:12px;"><a href="${c.url}" target="_blank" style="color:var(--blue);font-size:12px;">🔗 Apri documento ufficiale</a></div>`:'')
-    +`<div style="margin-top:12px;padding:10px;background:var(--surface2);border-radius:8px;font-size:11px;color:var(--muted);line-height:1.6;">
-      ℹ I dati su imprese e professionisti non sono disponibili nei dataset open data MIT. Usa la ricerca AI 🤖 per trovare informazioni aggiuntive su questo cantiere.
+    +`<div style="margin-top:12px;">
+      <button onclick="cercaInfoAI(${JSON.stringify(c.id)})" class="btn btn-purple" style="width:100%;justify-content:center;padding:9px;">
+        🤖 Cerca informazioni con AI
+      </button>
+      <div id="ai-info-result" style="margin-top:10px;font-size:12px;color:var(--muted);line-height:1.6;display:none;"></div>
     </div>`;
   // Aggiorna solo la card attiva senza re-render tutta la lista
   document.querySelectorAll('.card').forEach(el=>el.classList.remove('active'));
@@ -455,6 +458,43 @@ function fmt(n){n=Number(n)||0;if(n>=1e9)return(n/1e9).toFixed(1)+'Mld';if(n>=1e
 function showLoading(t){document.getElementById('loading').classList.add('on');document.getElementById('loading-text').textContent=t||'';}
 function hideLoading(){document.getElementById('loading').classList.remove('on');}
 function toast(msg,type){const t=document.getElementById('toast');t.textContent=msg;t.className='toast on '+(type||'');setTimeout(()=>t.className='toast',3500);}
+
+async function cercaInfoAI(id){
+  const c=allCantieri.find(x=>x.id==id);
+  if(!c) return;
+  const resultDiv=document.getElementById('ai-info-result');
+  const btn=document.querySelector('#d-body button');
+  if(!btn||!resultDiv) return;
+
+  btn.disabled=true;
+  btn.innerHTML='<span class="spinner" style="color:var(--purple);"></span>&nbsp;Ricerca in corso...';
+  resultDiv.style.display='block';
+  resultDiv.innerHTML='<span style="color:var(--muted);">L\'AI sta cercando informazioni su questo cantiere...</span>';
+
+  try{
+    const resp=await fetch(RAILWAY_AI_URL+'/api/ai/cerca-cantiere',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        nome: c.nome,
+        cig: c.cig,
+        stazione: c.stazione,
+        valore: c.valore,
+        citta: c.citta,
+      })
+    });
+    if(!resp.ok){
+      const e=await resp.json();
+      throw new Error(e.detail||'Errore '+resp.status);
+    }
+    const data=await resp.json();
+    resultDiv.innerHTML=data.html||'<span style="color:var(--muted);">Nessuna informazione trovata.</span>';
+  }catch(e){
+    resultDiv.innerHTML=`<span style="color:var(--red);">❌ ${e.message}</span>`;
+  }
+  btn.disabled=false;
+  btn.innerHTML='🤖 Cerca informazioni con AI';
+}
 
 window.onload=init;
 </script>
