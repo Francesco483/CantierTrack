@@ -14,12 +14,9 @@ HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; CantierTrack/1.0; academic pr
 TIMEOUT = 45
 MAX_ROWS = 10000
 
-# Solo MIT SCP che funziona — ANAC blocca con 403
 FONTI = [
     {"id": "mit_bandi", "nome": "MIT SCP — Bandi attivi", "ente": "MIT",
      "url": "https://dati.mit.gov.it/scp/v_od_bandi.csv", "parser": "mit_bandi"},
-    {"id": "mit_atti_2024", "nome": "MIT SCP — Atti 2024", "ente": "MIT",
-     "url": "https://dati.mit.gov.it/scp/v_od_atti_2024.csv", "parser": "mit_atti"},
     {"id": "mit_atti_2023", "nome": "MIT SCP — Atti 2023", "ente": "MIT",
      "url": "https://dati.mit.gov.it/scp/v_od_atti_2023.csv", "parser": "mit_atti"},
 ]
@@ -43,62 +40,59 @@ def pfloat(v):
     except: return 0.0
 
 def find_col(row, *candidates):
-    """Trova la prima colonna disponibile tra i candidati."""
     for c in candidates:
-        if c in row and row[c]: return row[c]
+        if c in row and row[c] and row[c] != "—": return row[c]
     return "—"
 
 def parse_mit_bandi(rows, fonte):
+    # Colonne reali: id_gara, oggetto_della_gara, numero_gara_anac, settore,
+    # modalita_realizzazione, importo_gara, num_tot_lotti, rup,
+    # codice_fiscale_stazione_appaltante, denominazione_stazione_appaltante
     items = []
     for r in rows:
-        # Prova varie combinazioni di nomi colonna
-        imp = pfloat(find_col(r, "importo", "IMPORTO", "valore", "VALORE"))
+        imp = pfloat(find_col(r, "importo_gara", "importo"))
         if imp <= 0: continue
-        stato_raw = find_col(r, "stato_bando", "STATO_BANDO", "stato", "STATO").upper()
-        stato = "completato" if any(x in stato_raw for x in ["SCAD","CHIUSO","ANNULL"]) else \
-                "sospeso" if "SOSP" in stato_raw else "attivo"
         items.append({
-            "nome": find_col(r, "oggetto", "OGGETTO", "denominazione"),
-            "citta": find_col(r, "luogo_esecuzione", "LUOGO_ESECUZIONE", "comune", "luogo"),
-            "regione": find_col(r, "regione", "REGIONE", "provincia"),
-            "valore": imp, "stato": stato,
-            "tipo": find_col(r, "tipo_bando", "TIPO_BANDO", "tipo"),
-            "tipoIntervento": find_col(r, "tipo_intervento", "TIPO_INTERVENTO", "categoria"),
-            "inizio": find_col(r, "data_pubb_bando_scp", "DATA_PUBB_BANDO_SCP", "data_pubblicazione", "data"),
-            "fine_prevista": find_col(r, "termine_pres_dom_off", "TERMINE_PRES_DOM_OFF", "scadenza"),
+            "nome": find_col(r, "oggetto_della_gara", "oggetto"),
+            "citta": "—", "regione": "",
+            "valore": imp, "stato": "attivo",
+            "tipo": find_col(r, "modalita_realizzazione", "settore"),
+            "tipoIntervento": find_col(r, "settore", "modalita_realizzazione"),
+            "inizio": "—", "fine_prevista": "—",
             "fonte": fonte["nome"], "ente": fonte["ente"],
-            "cig": find_col(r, "cig", "CIG"),
-            "cup": find_col(r, "cup", "CUP"),
-            "rup": find_col(r, "rup", "RUP"),
-            "stazione": find_col(r, "denominazione_stazione_appaltante", "DENOMINAZIONE_STAZIONE_APPALTANTE", "stazione_appaltante"),
-            "tipoProcedura": find_col(r, "tipo_procedura", "TIPO_PROCEDURA"),
-            "url": r.get("url") or r.get("URL") or None,
-            "lat": None, "lng": None,
+            "cig": find_col(r, "numero_gara_anac", "id_gara"),
+            "cup": "—",
+            "rup": find_col(r, "rup"),
+            "stazione": find_col(r, "denominazione_stazione_appaltante"),
+            "tipoProcedura": find_col(r, "modalita_realizzazione"),
+            "url": None, "lat": None, "lng": None,
         })
     return items
 
 def parse_mit_atti(rows, fonte):
+    # Colonne reali: dt_upd, id_gara, oggetto_della_gara, numero_gara_anac,
+    # settore, modalita_realizzazione, importo_gara, num_tot_lotti, rup,
+    # codice_fiscale_stazione_appaltante, denominazione_stazione_appaltante (+ altri)
     items = []
     for r in rows:
-        imp = pfloat(find_col(r, "imp_lotto", "IMP_LOTTO", "importo_gara", "IMPORTO_GARA", "importo", "IMPORTO"))
+        imp = pfloat(find_col(r, "importo_gara", "imp_lotto", "importo"))
         if imp <= 0: continue
         items.append({
-            "nome": find_col(r, "oggetto_lotto", "OGGETTO_LOTTO", "oggetto_della_gara", "oggetto", "OGGETTO"),
-            "citta": find_col(r, "luogo_esecuzione_istat", "LUOGO_ESECUZIONE_ISTAT", "luogo_esecuzione", "comune"),
-            "regione": find_col(r, "regione", "REGIONE", "provincia"),
+            "nome": find_col(r, "oggetto_della_gara", "oggetto_lotto", "oggetto"),
+            "citta": find_col(r, "luogo_istat", "luogo_esecuzione_istat", "comune"),
+            "regione": find_col(r, "regione", "provincia"),
             "valore": imp, "stato": "completato",
-            "tipo": find_col(r, "tipo_appalto", "TIPO_APPALTO", "tipo_bando", "tipo"),
-            "tipoIntervento": find_col(r, "tipo_appalto", "TIPO_APPALTO", "categoria"),
-            "inizio": find_col(r, "data_pubblicazione_bando", "DATA_PUBBLICAZIONE_BANDO", "data_pubblicazione"),
-            "fine_prevista": find_col(r, "data_scadenza_bando", "DATA_SCADENZA_BANDO", "scadenza"),
+            "tipo": find_col(r, "modalita_realizzazione", "settore"),
+            "tipoIntervento": find_col(r, "settore", "modalita_realizzazione"),
+            "inizio": find_col(r, "data_pubblicazione", "data_pubb_bando_scp", "dt_upd"),
+            "fine_prevista": find_col(r, "data_scadenza", "termine_pres_dom_off"),
             "fonte": fonte["nome"], "ente": fonte["ente"],
-            "cig": find_col(r, "cig", "CIG"),
-            "cup": find_col(r, "cup", "CUP"),
-            "rup": find_col(r, "rup", "RUP"),
-            "stazione": find_col(r, "denominazione_stazione_appaltante", "DENOMINAZIONE_STAZIONE_APPALTANTE"),
-            "tipoProcedura": find_col(r, "tipo_procedura", "TIPO_PROCEDURA"),
-            "url": r.get("url_documento") or r.get("URL_DOCUMENTO") or None,
-            "lat": None, "lng": None,
+            "cig": find_col(r, "numero_gara_anac", "cig", "id_gara"),
+            "cup": find_col(r, "cup"),
+            "rup": find_col(r, "rup"),
+            "stazione": find_col(r, "denominazione_stazione_appaltante"),
+            "tipoProcedura": find_col(r, "modalita_realizzazione"),
+            "url": None, "lat": None, "lng": None,
         })
     return items
 
@@ -118,14 +112,13 @@ def main():
                 try: text = resp.content.decode(enc); break
                 except: continue
             rows, headers = read_csv(text)
-            log.info(f"  Colonne CSV: {headers[:10]}")
-            log.info(f"  Righe totali: {len(rows)}")
+            log.info(f"  Colonne: {headers[:8]}")
             items = PARSERS[fonte["parser"]](rows, fonte)
             for item in items:
                 item["id"] = len(all_cantieri) + 1
             all_cantieri.extend(items)
             results.append({"id": fonte["id"], "nome": fonte["nome"], "count": len(items), "ok": True})
-            log.info(f"  OK: {len(items)} cantieri estratti")
+            log.info(f"  OK: {len(items)} cantieri")
         except Exception as e:
             log.error(f"  ERRORE: {e}")
             results.append({"id": fonte["id"], "nome": fonte["nome"], "count": 0, "ok": False})
@@ -143,7 +136,6 @@ def main():
 
     log.info(f"=== Salvati {len(all_cantieri)} cantieri ===")
     if len(all_cantieri) == 0:
-        log.error("ATTENZIONE: 0 cantieri salvati!")
         sys.exit(1)
 
 if __name__ == "__main__":
