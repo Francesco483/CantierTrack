@@ -311,7 +311,7 @@ function renderList(){
   const el=document.getElementById('list');
   if(!filtered.length){el.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted);">Nessun cantiere trovato</div>';return;}
   el.innerHTML=filtered.slice(0,300).map(c=>`
-    <div class="card${c.id===selectedId?' active':''}" onclick="selectCantiere(${JSON.stringify(c.id)})">
+    <div class="card${c.id==selectedId?' active':''}" data-id="${c.id}" onclick="selectCantiere(${JSON.stringify(c.id)})">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px;">
         <div class="card-nome">${c.nome||'—'}</div>
         <span class="badge badge-${c.stato||'attivo'}">${c.stato||'—'}</span>
@@ -336,9 +336,10 @@ function renderTable(){
 }
 
 function selectCantiere(id){
-  selectedId=id;
-  const c=allCantieri.find(x=>x.id===id);
+  // Cerca per ID sia come numero che come stringa
+  const c=allCantieri.find(x=>x.id==id || x.id===id);
   if(!c) return;
+  selectedId=c.id;
   document.getElementById('detail-empty').style.display='none';
   document.getElementById('detail-content').style.display='flex';
   document.getElementById('d-nome').textContent=c.nome||'—';
@@ -346,15 +347,30 @@ function selectCantiere(id){
   document.getElementById('d-citta').textContent='📍 '+(c.citta||'—')+(c.regione?', '+c.regione:'');
   const b=document.getElementById('d-badge');
   b.textContent=c.stato||'—'; b.className='badge badge-'+(c.stato||'attivo');
-  const rows=[['Tipo',c.tipo],['Intervento',c.tipoIntervento],['Inizio',c.inizio],
-    ['Fine prevista',c.fine_prevista],['Stazione',c.stazione],['Procedura',c.tipoProcedura],
-    ['CIG',c.cig],['CUP',c.cup],['RUP',c.rup],['Fonte',c.fonte||c.ente]];
+  const rows=[
+    ['Settore', c.tipoIntervento||c.tipo],
+    ['Modalità', c.tipoProcedura],
+    ['Stazione appaltante', c.stazione],
+    ['RUP', c.rup],
+    ['CIG', c.cig],
+    ['CUP', c.cup],
+    ['Inizio', c.inizio],
+    ['Scadenza', c.fine_prevista],
+    ['Fonte', c.fonte||c.ente],
+  ];
   document.getElementById('d-body').innerHTML=rows.filter(r=>r[1]&&r[1]!=='—').map(r=>`
     <div class="detail-row">
       <span class="detail-label">${r[0]}</span>
       <span class="detail-val">${r[1]}</span>
-    </div>`).join('')+(c.url?`<div style="margin-top:10px;"><a href="${c.url}" target="_blank" style="color:var(--blue);font-size:12px;">🔗 Apri documento</a></div>`:'');
-  renderList();
+    </div>`).join('')
+    +(c.url?`<div style="margin-top:12px;"><a href="${c.url}" target="_blank" style="color:var(--blue);font-size:12px;">🔗 Apri documento ufficiale</a></div>`:'')
+    +`<div style="margin-top:12px;padding:10px;background:var(--surface2);border-radius:8px;font-size:11px;color:var(--muted);line-height:1.6;">
+      ℹ I dati su imprese e professionisti non sono disponibili nei dataset open data MIT. Usa la ricerca AI 🤖 per trovare informazioni aggiuntive su questo cantiere.
+    </div>`;
+  // Aggiorna solo la card attiva senza re-render tutta la lista
+  document.querySelectorAll('.card').forEach(el=>el.classList.remove('active'));
+  const activeCard=document.querySelector(`.card[data-id="${c.id}"]`);
+  if(activeCard) activeCard.classList.add('active');
 }
 
 function updateStats(){
