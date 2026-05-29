@@ -797,6 +797,31 @@ function selectCantiere(id){
   document.querySelectorAll('.card').forEach(el=>el.classList.remove('active'));
   const activeCard=document.querySelector(`.card[data-id="${numId}"]`);
   if(activeCard) activeCard.classList.add('active');
+
+  // Vola sulla mappa se il cantiere ha coordinate
+  if(c.lat && c.lng){
+    // Switcha al tab mappa se si è sulla tabella
+    const mapTab = document.querySelector('.tab');
+    const mapContent = document.getElementById('tab-mappa');
+    if(!mapContent.classList.contains('on')){
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+      document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('on'));
+      mapTab.classList.add('on');
+      mapContent.classList.add('on');
+    }
+    setTimeout(()=>{
+      map.invalidateSize();
+      map.flyTo([c.lat, c.lng], 14, {duration: 1.2});
+      // Apre il popup del marker corrispondente
+      const marker = markers.find(m => {
+        const ll = m.getLatLng();
+        return Math.abs(ll.lat - c.lat) < 0.0001 && Math.abs(ll.lng - c.lng) < 0.0001;
+      });
+      if(marker){
+        setTimeout(()=>marker.openPopup(), 1300);
+      }
+    }, 50);
+  }
 }
 
 function updateStats(){
