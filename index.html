@@ -785,12 +785,17 @@ function selectCantiere(id){
       <span class="detail-val">${r[1]}</span>
     </div>`).join('')
     +(c.url?`<div style="margin-top:12px;"><a href="${c.url}" target="_blank">&#x1F517; Documento ufficiale</a></div>`:'')
-    +`<div style="margin-top:14px;display:flex;gap:7px;">
-      <button onclick="openDetail(${numId})" style="flex:1;padding:8px;background:var(--accent);color:#fff;border:none;border-radius:3px;cursor:pointer;font-family:'Source Serif 4',serif;font-size:12px;">
-        Dettaglio completo
-      </button>
-      <button onclick="cercaInfoAI(${numId})" style="flex:1;padding:8px;background:transparent;border:1px solid rgba(139,105,20,0.4);color:var(--gold);border-radius:3px;cursor:pointer;font-family:'Source Serif 4',serif;font-size:12px;">
-        Cerca AI
+    +`<div style="margin-top:14px;display:flex;gap:7px;flex-direction:column;">
+      <div style="display:flex;gap:7px;">
+        <button onclick="openDetail(${numId})" style="flex:1;padding:8px;background:var(--accent);color:#fff;border:none;border-radius:3px;cursor:pointer;font-family:'Source Serif 4',serif;font-size:12px;">
+          Dettaglio completo
+        </button>
+        <button onclick="cercaInfoAI(${numId})" style="flex:1;padding:8px;background:transparent;border:1px solid rgba(139,105,20,0.4);color:var(--gold);border-radius:3px;cursor:pointer;font-family:'Source Serif 4',serif;font-size:12px;">
+          Cerca AI
+        </button>
+      </div>
+      <button onclick="generaBOT(${numId})" style="width:100%;padding:8px;background:transparent;border:1px solid rgba(27,58,92,0.4);color:var(--accent);border-radius:3px;cursor:pointer;font-family:'Source Serif 4',serif;font-size:12px;letter-spacing:0.3px;">
+        Esporta grafo BOT
       </button>
     </div>
     <div id="ai-info-result" style="margin-top:10px;font-size:12px;color:var(--text-secondary);line-height:1.6;display:none;"></div>`;
@@ -1042,6 +1047,203 @@ async function cercaInfoAI(id){
   btn.disabled=false;
   btn.innerHTML='Cerca AI';
 }
+
+
+// ── BOT ONTOLOGY EXPORT ──────────────────────────────────────────
+
+async function generaBOT(id){
+  const c = allCantieri.find(x => Number(x.id) === Number(id));
+  if(!c) return;
+
+  // Trova il bottone e mostra stato di caricamento
+  const btn = document.querySelector(`button[onclick="generaBOT(${id})"]`);
+  if(btn){ btn.disabled=true; btn.textContent='Generazione grafo...'; }
+
+  toast('Analisi BOT in corso...', '');
+
+  try{
+    const resp = await fetch(RAILWAY_AI_URL+'/api/ai/bot-ontology', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        nome: c.nome, cig: c.cig, stazione: c.stazione,
+        valore: c.valore, citta: c.citta,
+        tipo: c.tipo, tipoIntervento: c.tipoIntervento,
+        tipoProcedura: c.tipoProcedura
+      })
+    });
+    if(!resp.ok){ const e=await resp.json(); throw new Error(e.detail||'Errore '+resp.status); }
+    const botData = await resp.json();
+    scaricaBOTasJPG(c, botData);
+    toast('Grafo BOT generato!', 'ok');
+  } catch(e){
+    toast('Errore BOT: '+e.message, 'err');
+  }
+  if(btn){ btn.disabled=false; btn.textContent='Esporta grafo BOT'; }
+}
+
+function scaricaBOTasJPG(c, d){
+  const W = 780, PAD = 40;
+
+  // Calcola altezza dinamica in base al numero di nodi
+  const maxNodes = Math.max(
+    (d.storeys||[]).length,
+    (d.spaces||[]).length,
+    (d.elements||[]).length
+  );
+  const H = 160 + 120 + 130 + (maxNodes > 3 ? 130 : 110) + 110 + ((d.sub_elements||[]).length > 0 ? 80 : 20) + 60;
+
+  // Colori palette accademica
+  const C = {
+    siteFill:'#B5D4F4', siteStroke:'#185FA5',
+    buildFill:'#9FE1CB', buildStroke:'#0F6E56',
+    storeyFill:'#9FE1CB', storeyStroke:'#0F6E56',
+    spaceFill:'#CECBF6', spaceStroke:'#534AB7',
+    elemFill:'#F5C4B3', elemStroke:'#993C1D',
+    dedFill:'#F5F4F0', dedStroke:'#888780',
+    arrow:'#5A5650', line:'#B8B2A5', text:'#1A1814', muted:'#8A857C'
+  };
+
+  // Helper: ellisse con o senza tratteggio
+  function ellipse(cx, cy, rx, ry, fill, stroke, dashed=false, label1='', label2=''){
+    const dash = dashed ? 'stroke-dasharray="5 3"' : '';
+    const t1fill = dashed ? C.muted : '#1A1814';
+    const t2fill = dashed ? '#444441' : '#1A1814';
+    return `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${fill}" stroke="${stroke}" stroke-width="1.5" ${dash}/>
+<text x="${cx}" y="${cy-7}" text-anchor="middle" font-size="10" fill="${t1fill}" font-family="Georgia,serif">${label1}</text>
+<text x="${cx}" y="${cy+9}" text-anchor="middle" font-size="12" font-weight="bold" fill="${t2fill}" font-family="Georgia,serif">${label2}</text>`;
+  }
+
+  // Helper: freccia orizzontale con etichetta
+  function arrow(x1, y, x2, label=''){
+    return `<line x1="${x1}" y1="${y}" x2="${x2-8}" y2="${y}" stroke="${C.arrow}" stroke-width="1" marker-end="url(#arr)"/>
+${label ? `<text x="${(x1+x2)/2}" y="${y-6}" text-anchor="middle" font-size="9" fill="${C.muted}" font-family="Georgia,serif">${label}</text>` : ''}`;
+  }
+
+  // Helper: freccia verticale
+  function arrowV(x, y1, y2, dashed=false){
+    const dash = dashed ? 'stroke-dasharray="4 3"' : '';
+    return `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2-8}" stroke="${C.arrow}" stroke-width="1" ${dash} marker-end="url(#arr)"/>`;
+  }
+
+  // Posizioni Y dei livelli
+  const Y = { site:130, build:130, storey1:100, storeyBase:130, space:320, elem:430 };
+  const subY = Y.elem + 100;
+
+  // ── Layout storeys (max 3, distribuiti verticalmente) ──
+  const storeys = d.storeys || [];
+  const storeyCY = storeys.map((_, i) => {
+    if(storeys.length === 1) return Y.storeyBase;
+    const spread = Math.min((storeys.length-1)*80, 160);
+    return Y.storeyBase - spread/2 + i*(spread/(storeys.length-1));
+  });
+
+  // ── Layout spaces ──
+  const spaces = d.spaces || [];
+  const spaceRX = 72, spaceCXBase = 90;
+  const spaceGap = Math.min(150, (W-80)/(spaces.length||1));
+  const spaceCX = spaces.map((_, i) => spaceCXBase + i * spaceGap);
+
+  // ── Layout elements ──
+  const elements = d.elements || [];
+  const elemGap = Math.min(150, (W-80)/(elements.length||1));
+  const elemCX = elements.map((_, i) => spaceCXBase + i * elemGap);
+
+  // ── SVG ──
+  const siteRX=62, buildRX=66, buildCX=280, siteCX=80, storeyCX=490, storeyRX=72;
+
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" style="background:#FAFAF8;font-family:Georgia,serif;">
+<defs>
+  <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M2 1L8 5L2 9" fill="none" stroke="${C.arrow}" stroke-width="1.5" stroke-linecap="round"/>
+  </marker>
+</defs>
+
+<!-- Sfondo intestazione -->
+<rect x="0" y="0" width="${W}" height="72" fill="#1B3A5C"/>
+<text x="${W/2}" y="26" text-anchor="middle" font-size="13" font-weight="bold" fill="#FFFFFF" font-family="Georgia,serif">${(c.nome||'').substring(0,80)}${(c.nome||'').length>80?'...':''}</text>
+<text x="${W/2}" y="44" text-anchor="middle" font-size="10" fill="#D4A843" font-family="Georgia,serif">${c.stazione||''} · ${c.citta||''} · ${c.valore?'€'+fmt(c.valore):''}</text>
+<text x="${W/2}" y="60" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.6)" font-family="Georgia,serif">CIG ${c.cig||'n/d'} · Ontologia BOT W3C · Generato da CantierTrack</text>
+
+<!-- Legenda -->
+<ellipse cx="80" cy="88" rx="22" ry="11" fill="#B5D4F4" stroke="#185FA5" stroke-width="1.5"/>
+<text x="108" y="92" font-size="9" fill="${C.muted}" font-family="Georgia,serif">Dato esplicito</text>
+<ellipse cx="210" cy="88" rx="22" ry="11" fill="${C.dedFill}" stroke="${C.dedStroke}" stroke-width="1.5" stroke-dasharray="4 3"/>
+<text x="238" y="92" font-size="9" fill="${C.muted}" font-family="Georgia,serif">Dedotto dall'AI</text>
+<line x1="0" y1="100" x2="${W}" y2="100" stroke="${C.line}" stroke-width="0.5"/>
+
+<!-- ── SITE ── -->
+${ellipse(siteCX, Y.site, siteRX, 32, C.siteFill, C.siteStroke, !d.site?.certo, 'bot:Site', d.site?.label||c.citta||'—')}
+
+<!-- freccia site → building -->
+${arrow(siteCX+siteRX, Y.site, buildCX-buildRX, 'bot:hasBuilding')}
+
+<!-- ── BUILDING L1 ── -->
+${ellipse(buildCX, Y.build, buildRX, 32, C.buildFill, C.buildStroke, !d.building?.certo, 'bot:Building', d.building?.label||'—')}
+<text x="${buildCX}" y="${Y.build+50}" text-anchor="middle" font-size="9" fill="${C.muted}" font-family="Georgia,serif">L1</text>
+
+<!-- freccia building → storeys -->
+${storeys.map((s,i) => arrow(buildCX+buildRX, Y.build + (storeyCY[i]-Y.build)*0.6, storeyCX-storeyRX, i===0?'bot:hasStorey':'')).join('
+')}
+
+<!-- ── STOREYS L2 ── -->
+${storeys.map((s,i) => ellipse(storeyCX, storeyCY[i], storeyRX, 28, C.storeyFill, C.storeyStroke, !s.certo, 'bot:Storey', s.label||'—')).join('
+')}
+<text x="${storeyCX+storeyRX+10}" y="${Y.storeyBase}" font-size="9" fill="${C.muted}" font-family="Georgia,serif">L2</text>
+
+<!-- separatore -->
+<line x1="${PAD}" y1="${Y.space-40}" x2="${W-PAD}" y2="${Y.space-40}" stroke="${C.line}" stroke-width="0.5" stroke-dasharray="4 4"/>
+<text x="${W/2}" y="${Y.space-26}" text-anchor="middle" font-size="9" fill="${C.muted}" font-family="Georgia,serif">bot:Space (zone di intervento) — L3</text>
+
+<!-- ── SPACES ── -->
+${spaces.map((s,i) => `
+${ellipse(spaceCX[i], Y.space, spaceRX, 28, s.certo?C.spaceFill:C.dedFill, s.certo?C.spaceStroke:C.dedStroke, !s.certo, 'bot:Space', s.label||'—')}
+${arrowV(spaceCX[i], Y.space+28, Y.elem-28, !s.certo)}
+`).join('')}
+<text x="${W/2}" y="${Y.space+46}" text-anchor="middle" font-size="9" fill="${C.muted}" font-family="Georgia,serif">bot:hasElement</text>
+
+<!-- ── ELEMENTS ── -->
+${elements.map((e,i) => ellipse(elemCX[i], Y.elem, spaceRX, 28, e.certo?C.elemFill:C.dedFill, e.certo?C.elemStroke:C.dedStroke, !e.certo, 'bot:Element', e.label||'—')).join('
+')}
+
+<!-- ── SUB-ELEMENTS ── -->
+${(d.sub_elements||[]).length > 0 ? `
+<text x="${W/2}" y="${subY-18}" text-anchor="middle" font-size="9" fill="${C.muted}" font-family="Georgia,serif">bot:hasSubElement</text>
+${(d.sub_elements||[]).map((se,i) => {
+  const ex = elemCX[se.element_index||0] || elemCX[0] || W/2;
+  return arrowV(ex, Y.elem+28, subY-28, !se.certo) +
+    ellipse(ex, subY, spaceRX-8, 24, se.certo?C.elemFill:C.dedFill, se.certo?C.elemStroke:C.dedStroke, !se.certo, 'bot:Element', se.label||'—');
+}).join('
+')}` : ''}
+
+<!-- Footer -->
+<line x1="0" y1="${H-28}" x2="${W}" y2="${H-28}" stroke="${C.line}" stroke-width="0.5"/>
+<text x="${W/2}" y="${H-12}" text-anchor="middle" font-size="8" fill="${C.muted}" font-family="Georgia,serif">CantierTrack · Building Topology Ontology (BOT) W3C · ${new Date().toLocaleDateString('it-IT')}</text>
+</svg>`;
+
+  // Converti SVG → Canvas → JPG e scarica
+  const blob = new Blob([svg], {type:'image/svg+xml'});
+  const url = URL.createObjectURL(blob);
+  const img = new Image();
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = W * 2;   // 2x per qualità stampa
+    canvas.height = H * 2;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(2, 2);
+    ctx.fillStyle = '#FAFAF8';
+    ctx.fillRect(0, 0, W, H);
+    ctx.drawImage(img, 0, 0, W, H);
+    URL.revokeObjectURL(url);
+    const link = document.createElement('a');
+    const nomeFile = (c.cig||'cantiere').replace(/[^a-z0-9]/gi,'_');
+    link.download = `BOT_${nomeFile}.jpg`;
+    link.href = canvas.toDataURL('image/jpeg', 0.95);
+    link.click();
+  };
+  img.src = url;
+}
+
+// ── END BOT ONTOLOGY ─────────────────────────────────────────────
 
 window.onload=init;
 </script>
