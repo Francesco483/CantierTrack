@@ -476,6 +476,27 @@ a:hover{text-decoration:underline;}
       <span class="pill" data-stato="sospeso" onclick="setStato(this)">Sospesi</span>
     </div>
 
+    <!-- Filtro per valore -->
+    <div style="padding:10px 12px;border-bottom:1px solid var(--border);background:var(--surface2);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);font-family:'Source Serif 4',serif;font-weight:300;">Valore minimo</span>
+        <span id="valore-label" style="font-size:11px;color:var(--gold);font-family:'DM Mono',monospace;">Tutti</span>
+      </div>
+      <input type="range" id="valore-filter" min="0" max="7" step="1" value="0"
+        oninput="setValoreFilter(this.value)"
+        style="width:100%;accent-color:var(--accent);cursor:pointer;">
+      <div style="display:flex;justify-content:space-between;margin-top:3px;">
+        <span style="font-size:9px;color:var(--muted);">Tutti</span>
+        <span style="font-size:9px;color:var(--muted);">100K</span>
+        <span style="font-size:9px;color:var(--muted);">500K</span>
+        <span style="font-size:9px;color:var(--muted);">1M</span>
+        <span style="font-size:9px;color:var(--muted);">5M</span>
+        <span style="font-size:9px;color:var(--muted);">10M</span>
+        <span style="font-size:9px;color:var(--muted);">50M</span>
+        <span style="font-size:9px;color:var(--muted);">>100M</span>
+      </div>
+    </div>
+
     <div class="list-header">
       <span id="list-count">0 cantieri</span>
       <span id="last-update" style="font-size:9px;"></span>
@@ -539,24 +560,30 @@ a:hover{text-decoration:underline;}
 <!-- MODALE DETTAGLIO CANTIERE -->
 <div class="overlay" id="overlay-detail">
   <div class="modal" style="width:700px;max-height:90vh;">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-shrink:0;">
-      <div style="flex:1;padding-right:16px;">
-        <div class="modal-title" id="md-nome" style="font-size:17px;line-height:1.35;"></div>
-        <div style="display:flex;gap:10px;align-items:center;margin-top:8px;">
-          <span id="md-badge" class="badge"></span>
-          <span id="md-valore" style="font-family:'DM Mono',monospace;font-size:18px;font-weight:500;color:var(--gold);"></span>
+
+    <!-- Header fisso non scrollabile -->
+    <div style="flex-shrink:0;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+            <span id="md-badge" class="badge"></span>
+            <span id="md-valore" style="font-family:'DM Mono',monospace;font-size:16px;font-weight:500;color:var(--gold);"></span>
+          </div>
+          <div id="md-nome" style="font-family:'Playfair Display',serif;font-size:15px;font-weight:600;line-height:1.4;color:var(--text);"></div>
         </div>
+        <button onclick="closeDetail()" style="flex-shrink:0;padding:4px 10px;border:1px solid var(--border);border-radius:3px;background:transparent;cursor:pointer;color:var(--muted);font-family:'Source Serif 4',serif;line-height:1;">&#x2715;</button>
       </div>
-      <button class="btn modal btn-outline" onclick="closeDetail()" style="padding:4px 10px;flex-shrink:0;border:1px solid var(--border);border-radius:3px;background:transparent;cursor:pointer;color:var(--muted);">&#x2715;</button>
     </div>
 
+    <!-- Body scrollabile -->
     <div class="modal-body" id="md-body"></div>
 
+    <!-- Footer fisso -->
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;padding-top:12px;border-top:1px solid var(--border);flex-shrink:0;">
-      <button class="btn btn-outline modal" onclick="closeDetail()" style="border:1px solid var(--border);background:transparent;border-radius:3px;font-family:'Source Serif 4',serif;color:var(--text-secondary);cursor:pointer;padding:7px 14px;">Chiudi</button>
-      <button class="btn btn-modal-ai modal" id="md-ai-btn" onclick="cercaInfoAIFromModal()" style="padding:7px 14px;border:1px solid rgba(139,105,20,0.4);background:transparent;border-radius:3px;color:var(--gold);font-family:'Source Serif 4',serif;cursor:pointer;">&#x2728; Cerca informazioni AI</button>
+      <button onclick="closeDetail()" style="border:1px solid var(--border);background:transparent;border-radius:3px;font-family:'Source Serif 4',serif;color:var(--text-secondary);cursor:pointer;padding:7px 14px;">Chiudi</button>
+      <button id="md-ai-btn" onclick="cercaInfoAIFromModal()" style="padding:7px 16px;border:1px solid rgba(139,105,20,0.4);background:transparent;border-radius:3px;color:var(--gold);font-family:'Source Serif 4',serif;cursor:pointer;">&#x2728; Cerca articoli e notizie</button>
     </div>
-    <div id="md-ai-result" style="margin-top:12px;display:none;padding-top:12px;border-top:1px solid var(--border);flex-shrink:0;"></div>
+    <div id="md-ai-result" style="margin-top:12px;display:none;padding-top:12px;border-top:1px solid var(--border);flex-shrink:0;max-height:260px;overflow-y:auto;"></div>
   </div>
 </div>
 
@@ -611,6 +638,14 @@ const RAILWAY_AI_URL  = 'https://web-production-927bb.up.railway.app';
 
 let allCantieri=[], filtered=[], selectedId=null;
 let statoFilter='tutti', sortField='nome', sortDir=1;
+let valoreMin=0;
+const VALORE_STEPS=[0,100000,500000,1000000,5000000,10000000,50000000,100000000];
+const VALORE_LABELS=['Tutti','≥100K','≥500K','≥1M','≥5M','≥10M','≥50M','≥100M'];
+function setValoreFilter(v){
+  valoreMin=VALORE_STEPS[Number(v)];
+  document.getElementById('valore-label').textContent=VALORE_LABELS[Number(v)];
+  applyFilters();
+}
 let map, markers=[];
 let aiCantieri=[], aiSelected=new Set();
 let aiChips=new Set(['infrastrutture','edilizia pubblica','PNRR']);
@@ -669,6 +704,7 @@ function applyFilters(){
   const q=document.getElementById('search').value.toLowerCase();
   filtered=allCantieri.filter(c=>{
     if(statoFilter!=='tutti'&&c.stato!==statoFilter) return false;
+    if(valoreMin>0&&(Number(c.valore)||0)<valoreMin) return false;
     if(q&&!`${c.nome} ${c.citta} ${c.stazione} ${c.ente||''}`.toLowerCase().includes(q)) return false;
     return true;
   });
@@ -913,7 +949,7 @@ async function cercaInfoAIFromModal(){
   try{
     const resp = await fetch(RAILWAY_AI_URL+'/api/ai/cerca-cantiere', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ nome:c.nome, cig:c.cig, stazione:c.stazione, valore:c.valore, citta:c.citta })
+      body: JSON.stringify({ nome:c.nome, cig:c.cig, stazione:c.stazione, valore:c.valore, citta:c.citta, cerca_articoli:true })
     });
     if(!resp.ok){ const e=await resp.json(); throw new Error(e.detail||'Errore '+resp.status); }
     const data = await resp.json();
@@ -923,8 +959,9 @@ async function cercaInfoAIFromModal(){
       .replace(/<p>/g,'<p style="margin-bottom:8px;color:var(--text-secondary);font-size:12px;line-height:1.6;">')
       .replace(/<strong>/g,'<strong style="color:var(--text);">')
       .replace(/<ul>/g,'<ul style="margin:6px 0 8px 16px;">')
-      .replace(/<li>/g,'<li style="color:var(--text-secondary);font-size:12px;margin-bottom:3px;">');
-    resultDiv.innerHTML = `<div style="font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);margin-bottom:8px;font-weight:300;">Risultati ricerca AI</div>${html}`;
+      .replace(/<li>/g,'<li style="color:var(--text-secondary);font-size:12px;margin-bottom:3px;">')
+      .replace(/<a /g,'<a style="color:var(--accent);word-break:break-all;" target="_blank" ');
+    resultDiv.innerHTML = `<div style="font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);margin-bottom:8px;font-weight:300;">Articoli e notizie trovati</div>${html}`;
   }catch(e){
     resultDiv.innerHTML = `<span style="color:var(--red);font-size:12px;">Errore: ${e.message}</span>`;
   }
@@ -967,10 +1004,11 @@ async function cercaInfoAI(id){
       .replace(/<p>/g,'<p style="margin-bottom:8px;color:var(--text-secondary);font-size:12px;line-height:1.6;">')
       .replace(/<strong>/g,'<strong style="color:var(--text);">')
       .replace(/<ul>/g,'<ul style="margin:6px 0 8px 16px;">')
-      .replace(/<li>/g,'<li style="color:var(--text-secondary);font-size:12px;margin-bottom:3px;">');
+      .replace(/<li>/g,'<li style="color:var(--text-secondary);font-size:12px;margin-bottom:3px;">')
+      .replace(/<a /g,'<a style="color:var(--accent);word-break:break-all;" target="_blank" ');
     resultDiv.innerHTML = `
       <div style="border-top:1px solid var(--border);padding-top:10px;margin-top:4px;">
-        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);margin-bottom:8px;font-weight:300;">Risultati ricerca AI</div>
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);margin-bottom:8px;font-weight:300;">Articoli e notizie trovati</div>
         ${html}
       </div>`;
   }catch(e){
