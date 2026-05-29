@@ -1182,12 +1182,10 @@ ${ellipse(buildCX, Y.build, buildRX, 32, C.buildFill, C.buildStroke, !d.building
 <text x="${buildCX}" y="${Y.build+50}" text-anchor="middle" font-size="9" fill="${C.muted}" font-family="Georgia,serif">L1</text>
 
 <!-- freccia building → storeys -->
-${storeys.map((s,i) => arrow(buildCX+buildRX, Y.build + (storeyCY[i]-Y.build)*0.6, storeyCX-storeyRX, i===0?'bot:hasStorey':'')).join('
-')}
+${storeys.map((s,i) => arrow(buildCX+buildRX, Y.build + (storeyCY[i]-Y.build)*0.6, storeyCX-storeyRX, i===0?'bot:hasStorey':'')).join('')}
 
 <!-- ── STOREYS L2 ── -->
-${storeys.map((s,i) => ellipse(storeyCX, storeyCY[i], storeyRX, 28, C.storeyFill, C.storeyStroke, !s.certo, 'bot:Storey', s.label||'—')).join('
-')}
+${storeys.map((s,i) => ellipse(storeyCX, storeyCY[i], storeyRX, 28, C.storeyFill, C.storeyStroke, !s.certo, 'bot:Storey', s.label||'—')).join('')}
 <text x="${storeyCX+storeyRX+10}" y="${Y.storeyBase}" font-size="9" fill="${C.muted}" font-family="Georgia,serif">L2</text>
 
 <!-- separatore -->
@@ -1202,8 +1200,7 @@ ${arrowV(spaceCX[i], Y.space+28, Y.elem-28, !s.certo)}
 <text x="${W/2}" y="${Y.space+46}" text-anchor="middle" font-size="9" fill="${C.muted}" font-family="Georgia,serif">bot:hasElement</text>
 
 <!-- ── ELEMENTS ── -->
-${elements.map((e,i) => ellipse(elemCX[i], Y.elem, spaceRX, 28, e.certo?C.elemFill:C.dedFill, e.certo?C.elemStroke:C.dedStroke, !e.certo, 'bot:Element', e.label||'—')).join('
-')}
+${elements.map((e,i) => ellipse(elemCX[i], Y.elem, spaceRX, 28, e.certo?C.elemFill:C.dedFill, e.certo?C.elemStroke:C.dedStroke, !e.certo, 'bot:Element', e.label||'—')).join('')}
 
 <!-- ── SUB-ELEMENTS ── -->
 ${(d.sub_elements||[]).length > 0 ? `
@@ -1212,8 +1209,7 @@ ${(d.sub_elements||[]).map((se,i) => {
   const ex = elemCX[se.element_index||0] || elemCX[0] || W/2;
   return arrowV(ex, Y.elem+28, subY-28, !se.certo) +
     ellipse(ex, subY, spaceRX-8, 24, se.certo?C.elemFill:C.dedFill, se.certo?C.elemStroke:C.dedStroke, !se.certo, 'bot:Element', se.label||'—');
-}).join('
-')}` : ''}
+}).join('')}` : ''}
 
 <!-- Footer -->
 <line x1="0" y1="${H-28}" x2="${W}" y2="${H-28}" stroke="${C.line}" stroke-width="0.5"/>
