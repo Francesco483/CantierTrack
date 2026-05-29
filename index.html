@@ -186,7 +186,27 @@ tr:hover td{background:var(--surface2);}
   </div>
 </div>
 
-<!-- MODAL AI -->
+<!-- MODALE DETTAGLIO CANTIERE -->
+<div class="overlay" id="overlay-detail">
+  <div class="modal" style="width:700px;max-height:90vh;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-shrink:0;">
+      <div>
+        <div class="modal-title" id="md-nome" style="font-size:16px;line-height:1.4;max-width:580px;"></div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:6px;">
+          <span id="md-badge" class="badge"></span>
+          <span id="md-valore" style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--yellow);"></span>
+        </div>
+      </div>
+      <button class="btn btn-outline" onclick="closeDetail()" style="padding:4px 10px;flex-shrink:0;">✕</button>
+    </div>
+    <div class="modal-body" id="md-body"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;padding-top:12px;border-top:1px solid var(--border);flex-shrink:0;">
+      <button class="btn btn-outline" onclick="closeDetail()">Chiudi</button>
+      <button class="btn btn-purple" id="md-ai-btn" onclick="cercaInfoAIFromModal()">🤖 Cerca informazioni AI</button>
+    </div>
+    <div id="md-ai-result" style="margin-top:12px;display:none;padding-top:12px;border-top:1px solid var(--border);flex-shrink:0;"></div>
+  </div>
+</div>
 <div class="overlay" id="overlay-ai">
   <div class="modal">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
@@ -364,12 +384,15 @@ function selectCantiere(id){
       <span class="detail-val">${r[1]}</span>
     </div>`).join('')
     +(c.url?`<div style="margin-top:12px;"><a href="${c.url}" target="_blank" style="color:var(--blue);font-size:12px;">🔗 Apri documento ufficiale</a></div>`:'')
-    +`<div style="margin-top:12px;">
-      <button onclick="cercaInfoAI(${numId})" class="btn btn-purple" style="width:100%;justify-content:center;padding:9px;">
-        🤖 Cerca informazioni con AI
+    +`<div style="margin-top:12px;display:flex;gap:8px;">
+      <button onclick="openDetail(${numId})" class="btn btn-yellow" style="flex:1;justify-content:center;padding:9px;">
+        📋 Dettaglio completo
       </button>
-      <div id="ai-info-result" style="margin-top:10px;font-size:12px;color:var(--muted);line-height:1.6;display:none;"></div>
-    </div>`;
+      <button onclick="cercaInfoAI(${numId})" class="btn btn-purple" style="flex:1;justify-content:center;padding:9px;">
+        🤖 Cerca AI
+      </button>
+    </div>
+    <div id="ai-info-result" style="margin-top:10px;font-size:12px;color:var(--muted);line-height:1.6;display:none;"></div>`;
   // Aggiorna evidenziazione nella lista
   document.querySelectorAll('.card').forEach(el=>el.classList.remove('active'));
   const activeCard=document.querySelector(`.card[data-id="${numId}"]`);
@@ -459,7 +482,82 @@ function showLoading(t){document.getElementById('loading').classList.add('on');d
 function hideLoading(){document.getElementById('loading').classList.remove('on');}
 function toast(msg,type){const t=document.getElementById('toast');t.textContent=msg;t.className='toast on '+(type||'');setTimeout(()=>t.className='toast',3500);}
 
-async function cercaInfoAI(id){
+function openDetail(id){
+  const c = allCantieri.find(x => Number(x.id) === Number(id));
+  if(!c) return;
+  document.getElementById('md-nome').textContent = c.nome || '—';
+  document.getElementById('md-valore').textContent = c.valore ? '€'+fmt(c.valore) : '—';
+  const b = document.getElementById('md-badge');
+  b.textContent = c.stato||'—'; b.className = 'badge badge-'+(c.stato||'attivo');
+
+  // Sezioni dettaglio
+  const sezioni = [
+    { titolo: '📍 Localizzazione', campi: [['Città', c.citta], ['Regione', c.regione]] },
+    { titolo: '📋 Appalto', campi: [['Tipo', c.tipo], ['Intervento', c.tipoIntervento], ['Procedura', c.tipoProcedura]] },
+    { titolo: '🏛 Stazione appaltante', campi: [['Ente', c.stazione], ['RUP', c.rup]] },
+    { titolo: '🔢 Identificativi', campi: [['CIG', c.cig], ['CUP', c.cup]] },
+    { titolo: '📅 Tempistiche', campi: [['Inizio', c.inizio], ['Scadenza', c.fine_prevista]] },
+    { titolo: '📰 Fonte', campi: [['Origine', c.fonte||c.ente]] },
+  ];
+
+  document.getElementById('md-body').innerHTML = sezioni.map(s => {
+    const campiHtml = s.campi.filter(([,v]) => v && v !== '—').map(([k,v]) => `
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);gap:16px;">
+        <span style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;flex-shrink:0;">${k}</span>
+        <span style="font-size:12px;color:var(--text);text-align:right;word-break:break-word;">${v}</span>
+      </div>`).join('');
+    if(!campiHtml) return '';
+    return `<div style="margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px;">${s.titolo}</div>
+      ${campiHtml}
+    </div>`;
+  }).join('')
+  + (c.url ? `<div style="margin-top:8px;"><a href="${c.url}" target="_blank" style="color:var(--blue);font-size:12px;">🔗 Apri documento ufficiale</a></div>` : '');
+
+  // Salva l'ID per la ricerca AI
+  document.getElementById('md-ai-btn').dataset.id = id;
+  document.getElementById('md-ai-result').style.display = 'none';
+  document.getElementById('md-ai-result').innerHTML = '';
+  document.getElementById('overlay-detail').classList.add('on');
+}
+
+function closeDetail(){
+  document.getElementById('overlay-detail').classList.remove('on');
+}
+
+async function cercaInfoAIFromModal(){
+  const id = Number(document.getElementById('md-ai-btn').dataset.id);
+  const c = allCantieri.find(x => Number(x.id) === id);
+  if(!c) return;
+
+  const btn = document.getElementById('md-ai-btn');
+  const resultDiv = document.getElementById('md-ai-result');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="color:var(--purple);"></span>&nbsp;Ricerca...';
+  resultDiv.style.display = 'block';
+  resultDiv.innerHTML = '<span style="color:var(--muted);font-size:12px;">Ricerca informazioni in corso...</span>';
+
+  try{
+    const resp = await fetch(RAILWAY_AI_URL+'/api/ai/cerca-cantiere', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ nome:c.nome, cig:c.cig, stazione:c.stazione, valore:c.valore, citta:c.citta })
+    });
+    if(!resp.ok){ const e=await resp.json(); throw new Error(e.detail||'Errore '+resp.status); }
+    const data = await resp.json();
+    let html = data.html || 'Nessuna informazione trovata.';
+    html = html.replace(/```html/gi,'').replace(/```/g,'').trim();
+    html = html
+      .replace(/<p>/g,'<p style="margin-bottom:8px;color:var(--muted);font-size:12px;line-height:1.6;">')
+      .replace(/<strong>/g,'<strong style="color:var(--text);">')
+      .replace(/<ul>/g,'<ul style="margin:6px 0 8px 16px;">')
+      .replace(/<li>/g,'<li style="color:var(--muted);font-size:12px;margin-bottom:3px;">');
+    resultDiv.innerHTML = `<div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:8px;">🤖 Risultati ricerca AI</div>${html}`;
+  }catch(e){
+    resultDiv.innerHTML = `<span style="color:var(--red);font-size:12px;">❌ ${e.message}</span>`;
+  }
+  btn.disabled = false;
+  btn.innerHTML = '🤖 Cerca informazioni AI';
+}
   const c=allCantieri.find(x=>x.id==id);
   if(!c) return;
   const resultDiv=document.getElementById('ai-info-result');
