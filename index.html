@@ -4,112 +4,458 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CantierTrack — Appalti & Cantieri Pubblici Italia</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Source+Serif+4:ital,wght@0,300;0,400;0,500;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-:root{--bg:#0d0f12;--surface:#161920;--surface2:#1e2230;--border:#2a2f3d;--text:#e8eaf0;--muted:#6b7280;--blue:#4a9eff;--green:#2ecc71;--yellow:#f59e0b;--red:#e05c2a;--purple:#b06ef3;}
+:root{
+  --bg:#F7F5F0;
+  --surface:#FFFFFF;
+  --surface2:#F0EDE6;
+  --border:#DDD9CF;
+  --border-strong:#B8B2A5;
+  --text:#1A1814;
+  --text-secondary:#5A5650;
+  --muted:#8A857C;
+  --accent:#1B3A5C;
+  --accent-light:#E8EFF6;
+  --gold:#8B6914;
+  --gold-light:#F5EDD6;
+  --green:#1A5C35;
+  --green-light:#E8F3EC;
+  --red:#8B1A1A;
+  --red-light:#F5E8E8;
+  --blue:#1A3B8B;
+  --blue-light:#E8ECF5;
+}
 *{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Source Serif 4',Georgia,serif;font-size:14px;line-height:1.5;}
 body{display:flex;flex-direction:column;}
-header{height:60px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0;}
-.logo{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;}.logo span{color:var(--yellow);}
-.logo-icon{width:32px;height:32px;background:var(--yellow);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
-.hstats{display:flex;gap:24px;flex:1;justify-content:center;}
-.hstat{text-align:center;}
-.hstat-val{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--yellow);}
-.hstat-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;}
+
+/* ── HEADER ── */
+header{
+  height:64px;
+  background:var(--accent);
+  display:flex;align-items:center;padding:0 24px;gap:20px;flex-shrink:0;
+  border-bottom:3px solid var(--gold);
+}
+.logo{
+  font-family:'Playfair Display',Georgia,serif;
+  font-size:20px;font-weight:700;
+  color:#FFFFFF;letter-spacing:0.3px;
+  white-space:nowrap;
+}
+.logo span{color:#D4A843;}
+.logo-divider{width:1px;height:28px;background:rgba(255,255,255,0.2);flex-shrink:0;}
+.logo-sub{font-size:10px;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:1.2px;font-family:'Source Serif 4',serif;font-weight:300;}
+
+.hstats{display:flex;gap:0;flex:1;justify-content:center;}
+.hstat{
+  text-align:center;padding:0 20px;
+  border-right:1px solid rgba(255,255,255,0.15);
+}
+.hstat:first-child{border-left:1px solid rgba(255,255,255,0.15);}
+.hstat-val{
+  font-family:'Playfair Display',serif;
+  font-size:17px;font-weight:700;color:#D4A843;
+  display:block;
+}
+.hstat-lbl{
+  font-size:9px;color:rgba(255,255,255,0.5);
+  text-transform:uppercase;letter-spacing:1px;
+  font-family:'Source Serif 4',serif;font-weight:300;
+  display:block;margin-top:1px;
+}
 .header-btns{display:flex;gap:8px;}
-.btn{padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;transition:all 0.15s;display:flex;align-items:center;gap:6px;}
-.btn-yellow{background:var(--yellow);color:#1a1000;}.btn-yellow:hover{background:#d97706;}
-.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text);}.btn-outline:hover{border-color:var(--muted);}
-.btn-purple{background:rgba(176,110,243,0.15);border:1px solid rgba(176,110,243,0.3);color:var(--purple);}.btn-purple:hover{background:rgba(176,110,243,0.25);}
-.btn:disabled{opacity:0.5;cursor:not-allowed;}
+.btn{
+  padding:7px 15px;
+  border-radius:3px;
+  border:none;cursor:pointer;
+  font-family:'Source Serif 4',serif;
+  font-size:12px;font-weight:500;
+  transition:all 0.15s;
+  display:flex;align-items:center;gap:6px;
+  letter-spacing:0.2px;
+}
+.btn-primary{
+  background:var(--gold);color:#FFF8EC;
+  border:1px solid rgba(0,0,0,0.1);
+}
+.btn-primary:hover{background:#7A5C10;}
+.btn-ghost{
+  background:rgba(255,255,255,0.1);
+  border:1px solid rgba(255,255,255,0.2);
+  color:rgba(255,255,255,0.85);
+}
+.btn-ghost:hover{background:rgba(255,255,255,0.18);}
+.btn-accent{
+  background:rgba(255,255,255,0.12);
+  border:1px solid rgba(212,168,67,0.4);
+  color:#D4A843;
+}
+.btn-accent:hover{background:rgba(212,168,67,0.2);}
+.btn:disabled{opacity:0.45;cursor:not-allowed;}
+
+/* ── LAYOUT ── */
 .app{display:flex;flex:1;overflow:hidden;}
-.sidebar{width:340px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;}
+.sidebar{width:320px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;}
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
-.search-wrap{padding:12px;border-bottom:1px solid var(--border);}
+
+/* ── SIDEBAR ── */
+.search-wrap{padding:12px;border-bottom:1px solid var(--border);background:var(--surface2);}
 .search-rel{position:relative;}
-.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);}
-.search-input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 12px 8px 30px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;}
-.filters{padding:10px 12px;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;gap:6px;}
-.pill{padding:4px 10px;border-radius:12px;border:1px solid var(--border);font-size:11px;cursor:pointer;color:var(--muted);background:transparent;transition:all 0.15s;}
-.pill.on{background:rgba(245,158,11,0.15);border-color:rgba(245,158,11,0.4);color:var(--yellow);}
-.list-header{padding:8px 12px;font-size:11px;color:var(--muted);display:flex;justify-content:space-between;border-bottom:1px solid var(--border);}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;}
+.search-input{
+  width:100%;background:var(--surface);
+  border:1px solid var(--border);
+  color:var(--text);
+  padding:8px 12px 8px 30px;
+  border-radius:3px;
+  font-family:'Source Serif 4',serif;font-size:13px;outline:none;
+  transition:border-color 0.15s;
+}
+.search-input:focus{border-color:var(--accent);}
+.search-input::placeholder{color:var(--muted);}
+
+.filters{padding:10px 12px;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;gap:5px;background:var(--surface2);}
+.pill{
+  padding:3px 10px;border-radius:2px;
+  border:1px solid var(--border);
+  font-size:11px;cursor:pointer;
+  color:var(--text-secondary);
+  background:var(--surface);
+  font-family:'Source Serif 4',serif;
+  transition:all 0.15s;letter-spacing:0.2px;
+}
+.pill.on{
+  background:var(--accent);
+  border-color:var(--accent);
+  color:#FFFFFF;
+}
+.pill:hover:not(.on){border-color:var(--accent);color:var(--accent);}
+
+.list-header{
+  padding:7px 12px;
+  font-size:10px;color:var(--muted);
+  display:flex;justify-content:space-between;
+  border-bottom:1px solid var(--border);
+  background:var(--surface2);
+  text-transform:uppercase;letter-spacing:0.8px;
+  font-family:'Source Serif 4',serif;font-weight:300;
+}
 .list{flex:1;overflow-y:auto;}
-.list::-webkit-scrollbar{width:4px;}.list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
-.card{padding:12px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s;}
+.list::-webkit-scrollbar{width:4px;}
+.list::-webkit-scrollbar-thumb{background:var(--border);border-radius:0;}
+
+.card{
+  padding:12px 14px;
+  border-bottom:1px solid var(--border);
+  cursor:pointer;transition:background 0.12s;
+}
 .card:hover{background:var(--surface2);}
-.card.active{background:var(--surface2);border-left:3px solid var(--yellow);}
-.card-nome{font-size:13px;font-weight:500;margin-bottom:4px;line-height:1.3;}
+.card.active{
+  background:var(--accent-light);
+  border-left:3px solid var(--accent);
+  padding-left:11px;
+}
+.card-nome{
+  font-size:12.5px;font-weight:500;
+  margin-bottom:5px;line-height:1.35;
+  color:var(--text);
+  font-family:'Source Serif 4',serif;
+}
 .card-meta{display:flex;justify-content:space-between;align-items:center;}
 .card-citta{font-size:11px;color:var(--muted);}
-.card-valore{font-size:12px;font-weight:500;color:var(--yellow);}
-.badge{font-size:10px;padding:2px 7px;border-radius:8px;font-weight:500;}
-.badge-attivo{background:rgba(46,204,113,0.15);color:var(--green);}
-.badge-pianificato{background:rgba(74,158,255,0.15);color:var(--blue);}
-.badge-completato{background:rgba(107,114,128,0.15);color:var(--muted);}
-.badge-sospeso{background:rgba(224,92,42,0.15);color:var(--red);}
-.tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;}
-.tab{padding:10px 18px;font-size:13px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all 0.15s;}
-.tab.on{color:var(--yellow);border-bottom-color:var(--yellow);}
+.card-valore{font-size:12px;font-weight:500;color:var(--gold);font-family:'DM Mono',monospace;}
+
+/* ── BADGES ── */
+.badge{font-size:10px;padding:2px 7px;border-radius:2px;font-weight:500;font-family:'Source Serif 4',serif;letter-spacing:0.3px;}
+.badge-attivo{background:var(--green-light);color:var(--green);}
+.badge-pianificato{background:var(--blue-light);color:var(--blue);}
+.badge-completato{background:#F0EDE6;color:var(--muted);}
+.badge-sospeso{background:var(--red-light);color:var(--red);}
+
+/* ── TABS ── */
+.tabs{
+  display:flex;border-bottom:1px solid var(--border);
+  background:var(--surface);flex-shrink:0;
+  padding:0 16px;
+}
+.tab{
+  padding:11px 16px;font-size:12px;
+  cursor:pointer;color:var(--muted);
+  border-bottom:2px solid transparent;
+  transition:all 0.15s;
+  font-family:'Source Serif 4',serif;
+  letter-spacing:0.3px;
+}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent);}
+.tab:hover:not(.on){color:var(--text-secondary);}
+
 .tab-content{display:none;flex:1;overflow:hidden;}
 .tab-content.on{display:flex;flex-direction:column;}
 #map{flex:1;min-height:0;}
-.map-toolbar{padding:8px 12px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-shrink:0;}
-.detail{width:320px;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;}
-.detail-header{padding:14px;border-bottom:1px solid var(--border);}
-.detail-nome{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:8px;line-height:1.3;}
-.detail-valore{font-size:22px;font-weight:700;color:var(--yellow);font-family:'Syne',sans-serif;}
-.detail-body{flex:1;overflow-y:auto;padding:14px;}
-.detail-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);gap:12px;}
-.detail-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;flex-shrink:0;}
+
+.map-toolbar{
+  padding:8px 14px;background:var(--surface);
+  border-bottom:1px solid var(--border);
+  display:flex;gap:8px;align-items:center;flex-shrink:0;
+}
+.map-toolbar span{font-size:11px;color:var(--muted);font-style:italic;}
+
+/* ── DETAIL PANEL ── */
+.detail{
+  width:300px;background:var(--surface);
+  border-left:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;
+}
+.detail-header{
+  padding:14px 16px;border-bottom:1px solid var(--border);
+  background:var(--surface2);
+}
+.detail-nome{
+  font-family:'Playfair Display',serif;
+  font-size:14px;font-weight:600;
+  margin-bottom:8px;line-height:1.35;color:var(--text);
+}
+.detail-valore{
+  font-size:20px;font-weight:700;color:var(--gold);
+  font-family:'DM Mono',monospace;
+}
+.detail-body{flex:1;overflow-y:auto;padding:12px 16px;}
+.detail-row{
+  display:flex;justify-content:space-between;
+  padding:6px 0;border-bottom:1px solid var(--border);gap:12px;
+}
+.detail-label{
+  font-size:10px;color:var(--muted);
+  text-transform:uppercase;letter-spacing:0.6px;
+  flex-shrink:0;font-weight:300;
+  font-family:'Source Serif 4',serif;
+}
 .detail-val{font-size:12px;color:var(--text);text-align:right;word-break:break-word;}
-.detail-empty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;flex-direction:column;gap:8px;}
+.detail-empty{
+  flex:1;display:flex;align-items:center;
+  justify-content:center;color:var(--muted);
+  font-size:12px;flex-direction:column;gap:10px;
+  font-style:italic;
+}
+.detail-icon-placeholder{
+  width:48px;height:48px;
+  border:1px solid var(--border);
+  border-radius:3px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;color:var(--border-strong);
+}
+
+/* ── TABLE ── */
 .table-wrap{flex:1;overflow:auto;}
 table{width:100%;border-collapse:collapse;font-size:12px;}
-th{background:var(--surface);padding:8px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.4px;color:var(--muted);position:sticky;top:0;border-bottom:1px solid var(--border);cursor:pointer;}
+thead{position:sticky;top:0;z-index:1;}
+th{
+  background:var(--surface2);
+  padding:9px 12px;text-align:left;
+  font-size:10px;text-transform:uppercase;
+  letter-spacing:0.8px;color:var(--muted);
+  border-bottom:2px solid var(--border);
+  cursor:pointer;font-family:'Source Serif 4',serif;font-weight:300;
+}
 th:hover{color:var(--text);}
 td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text);}
 tr:hover td{background:var(--surface2);}
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;align-items:center;justify-content:center;padding:16px;}
+tr:nth-child(even) td{background:#FAFAF8;}
+tr:nth-child(even):hover td{background:var(--surface2);}
+
+/* ── MODALS ── */
+.overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(26,24,20,0.65);
+  z-index:1000;align-items:center;justify-content:center;padding:16px;
+  backdrop-filter:blur(2px);
+}
 .overlay.on{display:flex;}
-.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:640px;max-width:95vw;max-height:88vh;display:flex;flex-direction:column;}
-.modal-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;margin-bottom:6px;}
-.modal-sub{font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.6;}
+.modal{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-top:3px solid var(--accent);
+  border-radius:2px;padding:28px;
+  width:640px;max-width:95vw;max-height:88vh;
+  display:flex;flex-direction:column;
+  box-shadow:0 8px 40px rgba(0,0,0,0.18);
+}
+.modal-title{
+  font-family:'Playfair Display',serif;
+  font-size:18px;font-weight:600;
+  margin-bottom:6px;color:var(--text);
+}
+.modal-sub{
+  font-size:12px;color:var(--text-secondary);
+  margin-bottom:16px;line-height:1.6;font-style:italic;
+}
 .modal-body{flex:1;overflow-y:auto;padding-right:4px;}
-.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);}
-.ai-chip{display:inline-block;font-size:11px;padding:3px 10px;border-radius:12px;border:1px solid var(--border);cursor:pointer;color:var(--muted);background:transparent;transition:all 0.15s;user-select:none;margin:2px;}
-.ai-chip.on{background:rgba(176,110,243,0.2);border-color:rgba(176,110,243,0.5);color:var(--purple);}
-.ai-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:11px 13px;cursor:pointer;transition:border-color 0.15s;margin-bottom:7px;}
-.ai-card:hover{border-color:var(--muted);}
-.ai-card.sel{border-color:var(--purple);border-width:1.5px;}
+.modal-footer{
+  display:flex;justify-content:flex-end;gap:8px;
+  margin-top:16px;padding-top:14px;
+  border-top:1px solid var(--border);
+}
+
+/* ── MODAL INNER STYLES ── */
+.modal .btn-outline{
+  background:transparent;
+  border:1px solid var(--border);
+  color:var(--text-secondary);
+  border-radius:3px;
+  font-family:'Source Serif 4',serif;
+}
+.modal .btn-outline:hover{border-color:var(--border-strong);color:var(--text);}
+.modal .btn-modal-primary{
+  background:var(--accent);color:#FFF;
+  border:none;border-radius:3px;
+  font-family:'Source Serif 4',serif;
+}
+.modal .btn-modal-primary:hover{background:#14304F;}
+.modal .btn-modal-ai{
+  background:transparent;
+  border:1px solid rgba(139,105,20,0.4);
+  color:var(--gold);border-radius:3px;
+  font-family:'Source Serif 4',serif;
+}
+.modal .btn-modal-ai:hover{background:var(--gold-light);}
+
+.modal-section-title{
+  font-size:11px;font-weight:500;
+  color:var(--text-secondary);
+  margin-bottom:6px;
+  text-transform:uppercase;letter-spacing:0.8px;
+  font-family:'Source Serif 4',serif;font-weight:300;
+  display:flex;align-items:center;gap:8px;
+}
+.modal-section-title::after{
+  content:'';flex:1;height:1px;background:var(--border);
+}
+.modal-row{
+  display:flex;justify-content:space-between;
+  padding:5px 0;border-bottom:1px solid var(--border);gap:16px;
+}
+
+/* ── AI SEARCH ── */
+.ai-chip{
+  display:inline-block;font-size:11px;
+  padding:3px 9px;border-radius:2px;
+  border:1px solid var(--border);
+  cursor:pointer;color:var(--text-secondary);
+  background:var(--surface);
+  transition:all 0.15s;user-select:none;margin:2px;
+  font-family:'Source Serif 4',serif;
+}
+.ai-chip.on{
+  background:var(--accent-light);
+  border-color:var(--accent);color:var(--accent);
+}
+.ai-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:2px;padding:11px 13px;
+  cursor:pointer;transition:border-color 0.15s;margin-bottom:6px;
+}
+.ai-card:hover{border-color:var(--border-strong);}
+.ai-card.sel{border-color:var(--accent);border-left:3px solid var(--accent);}
+
+/* ── MODAL SEARCH INPUT ── */
+.modal-input{
+  flex:1;background:var(--surface);
+  border:1px solid var(--border);
+  color:var(--text);padding:8px 12px;
+  border-radius:3px;font-size:13px;outline:none;
+  font-family:'Source Serif 4',serif;
+  transition:border-color 0.15s;
+}
+.modal-input:focus{border-color:var(--accent);}
+.modal-input::placeholder{color:var(--muted);font-style:italic;}
+
+/* ── UTILITIES ── */
 @keyframes spin{to{transform:rotate(360deg);}}
-.spinner{width:14px;height:14px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block;vertical-align:middle;}
-.toast{position:fixed;bottom:20px;right:20px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:13px;z-index:2000;transform:translateY(80px);opacity:0;transition:all 0.3s;}
+.spinner{
+  width:13px;height:13px;
+  border:1.5px solid currentColor;
+  border-top-color:transparent;
+  border-radius:50%;
+  animation:spin 0.7s linear infinite;
+  display:inline-block;vertical-align:middle;
+}
+.toast{
+  position:fixed;bottom:24px;right:24px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:2px;padding:10px 16px;
+  font-size:12px;z-index:2000;
+  transform:translateY(70px);opacity:0;
+  transition:all 0.3s;
+  font-family:'Source Serif 4',serif;
+  box-shadow:0 4px 20px rgba(0,0,0,0.1);
+}
 .toast.on{transform:translateY(0);opacity:1;}
 .toast.ok{border-color:var(--green);color:var(--green);}
 .toast.err{border-color:var(--red);color:var(--red);}
-.loading{position:fixed;inset:0;background:rgba(13,15,18,0.85);z-index:900;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;}
+.loading{
+  position:fixed;inset:0;
+  background:rgba(247,245,240,0.88);
+  z-index:900;display:none;
+  align-items:center;justify-content:center;
+  flex-direction:column;gap:14px;
+  backdrop-filter:blur(1px);
+}
 .loading.on{display:flex;}
-.loading-text{color:var(--muted);font-size:13px;}
-.big-spinner{width:36px;height:36px;border:3px solid var(--yellow);border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;}
+.loading-text{color:var(--text-secondary);font-size:13px;font-style:italic;}
+.big-spinner{
+  width:32px;height:32px;
+  border:2px solid var(--accent);
+  border-top-color:transparent;
+  border-radius:50%;animation:spin 0.8s linear infinite;
+}
+
+/* ── LINK ── */
+a{color:var(--accent);text-decoration:none;font-size:12px;}
+a:hover{text-decoration:underline;}
+
+/* ── MAP OVERRIDE ── */
+.leaflet-container{font-family:'Source Serif 4',serif !important;}
+.leaflet-popup-content-wrapper{
+  border-radius:3px !important;
+  border:1px solid var(--border) !important;
+  box-shadow:0 4px 16px rgba(0,0,0,0.12) !important;
+}
 </style>
 </head>
 <body>
 
 <header>
-  <div class="logo-icon">🏗</div>
   <div class="logo">Cantier<span>Track</span></div>
+  <div class="logo-divider"></div>
+  <div class="logo-sub">Appalti pubblici Italia</div>
+
   <div class="hstats">
-    <div class="hstat"><div class="hstat-val" id="h-tot">0</div><div class="hstat-lbl">Cantieri</div></div>
-    <div class="hstat"><div class="hstat-val" id="h-valore">—</div><div class="hstat-lbl">Valore tot.</div></div>
-    <div class="hstat"><div class="hstat-val" id="h-attivi">0</div><div class="hstat-lbl">Attivi</div></div>
-    <div class="hstat"><div class="hstat-val" id="h-pnrr">0</div><div class="hstat-lbl">PNRR</div></div>
+    <div class="hstat">
+      <span class="hstat-val" id="h-tot">0</span>
+      <span class="hstat-lbl">Cantieri</span>
+    </div>
+    <div class="hstat">
+      <span class="hstat-val" id="h-valore">—</span>
+      <span class="hstat-lbl">Valore totale</span>
+    </div>
+    <div class="hstat">
+      <span class="hstat-val" id="h-attivi">0</span>
+      <span class="hstat-lbl">Attivi</span>
+    </div>
+    <div class="hstat">
+      <span class="hstat-val" id="h-pnrr">0</span>
+      <span class="hstat-lbl">PNRR</span>
+    </div>
   </div>
+
   <div class="header-btns">
-    <button class="btn btn-purple" onclick="openAI()">🤖 Cerca AI</button>
-    <button class="btn btn-yellow" onclick="loadData()">🔄 Aggiorna</button>
+    <button class="btn btn-accent" onclick="openAI()">&#x2728; Ricerca AI</button>
+    <button class="btn btn-ghost" onclick="loadData()">&#x21BA; Aggiorna</button>
   </div>
 </header>
 
@@ -117,10 +463,11 @@ tr:hover td{background:var(--surface2);}
   <div class="sidebar">
     <div class="search-wrap">
       <div class="search-rel">
-        <span class="search-icon">🔍</span>
+        <span class="search-icon">&#x2315;</span>
         <input class="search-input" id="search" placeholder="Cerca cantiere, città, stazione..." oninput="applyFilters()">
       </div>
     </div>
+
     <div class="filters" id="stato-filters">
       <span class="pill on" data-stato="tutti" onclick="setStato(this)">Tutti</span>
       <span class="pill" data-stato="attivo" onclick="setStato(this)">Attivi</span>
@@ -128,30 +475,33 @@ tr:hover td{background:var(--surface2);}
       <span class="pill" data-stato="completato" onclick="setStato(this)">Completati</span>
       <span class="pill" data-stato="sospeso" onclick="setStato(this)">Sospesi</span>
     </div>
+
     <div class="list-header">
       <span id="list-count">0 cantieri</span>
-      <span id="last-update" style="font-size:10px;"></span>
+      <span id="last-update" style="font-size:9px;"></span>
     </div>
+
     <div class="list" id="list"></div>
   </div>
 
   <div class="main">
     <div class="tabs">
-      <div class="tab on" onclick="switchTab('mappa',this)">🗺 Mappa</div>
-      <div class="tab" onclick="switchTab('tabella',this)">📋 Tabella</div>
+      <div class="tab on" onclick="switchTab('mappa',this)">Mappa</div>
+      <div class="tab" onclick="switchTab('tabella',this)">Tabella dati</div>
     </div>
 
     <div class="tab-content on" id="tab-mappa" style="flex-direction:row;">
       <div style="flex:1;display:flex;flex-direction:column;min-height:0;">
         <div class="map-toolbar">
-          <span style="font-size:12px;color:var(--muted);">Punti colorati = cantieri con coordinate GPS</span>
-          <span id="map-count" style="font-size:11px;color:var(--yellow);margin-left:auto;"></span>
+          <span>Punti colorati indicano cantieri con coordinate GPS georeferenziate</span>
+          <span id="map-count" style="color:var(--gold);font-style:normal;font-family:'DM Mono',monospace;font-size:11px;margin-left:auto;"></span>
         </div>
         <div id="map"></div>
       </div>
+
       <div class="detail">
         <div class="detail-empty" id="detail-empty">
-          <span style="font-size:32px;">🏗</span>
+          <div class="detail-icon-placeholder">&#x1F3D7;</div>
           <span>Seleziona un cantiere dalla lista</span>
         </div>
         <div id="detail-content" style="display:none;flex:1;flex-direction:column;overflow:hidden;">
@@ -161,7 +511,7 @@ tr:hover td{background:var(--surface2);}
               <div class="detail-valore" id="d-valore"></div>
               <span id="d-badge" class="badge"></span>
             </div>
-            <div style="font-size:12px;color:var(--muted);" id="d-citta"></div>
+            <div style="font-size:11px;color:var(--muted);font-style:italic;" id="d-citta"></div>
           </div>
           <div class="detail-body" id="d-body"></div>
         </div>
@@ -172,11 +522,11 @@ tr:hover td{background:var(--surface2);}
       <div class="table-wrap">
         <table>
           <thead><tr>
-            <th onclick="sortBy('nome')">Nome ↕</th>
-            <th onclick="sortBy('citta')">Città ↕</th>
-            <th onclick="sortBy('valore')">Valore ↕</th>
-            <th onclick="sortBy('stato')">Stato ↕</th>
-            <th onclick="sortBy('stazione')">Stazione appaltante ↕</th>
+            <th onclick="sortBy('nome')">Nome &#x2195;</th>
+            <th onclick="sortBy('citta')">Città &#x2195;</th>
+            <th onclick="sortBy('valore')">Valore &#x2195;</th>
+            <th onclick="sortBy('stato')">Stato &#x2195;</th>
+            <th onclick="sortBy('stazione')">Stazione appaltante &#x2195;</th>
             <th>Fonte</th>
           </tr></thead>
           <tbody id="tbody"></tbody>
@@ -189,36 +539,41 @@ tr:hover td{background:var(--surface2);}
 <!-- MODALE DETTAGLIO CANTIERE -->
 <div class="overlay" id="overlay-detail">
   <div class="modal" style="width:700px;max-height:90vh;">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-shrink:0;">
-      <div>
-        <div class="modal-title" id="md-nome" style="font-size:16px;line-height:1.4;max-width:580px;"></div>
-        <div style="display:flex;gap:8px;align-items:center;margin-top:6px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-shrink:0;">
+      <div style="flex:1;padding-right:16px;">
+        <div class="modal-title" id="md-nome" style="font-size:17px;line-height:1.35;"></div>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:8px;">
           <span id="md-badge" class="badge"></span>
-          <span id="md-valore" style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--yellow);"></span>
+          <span id="md-valore" style="font-family:'DM Mono',monospace;font-size:18px;font-weight:500;color:var(--gold);"></span>
         </div>
       </div>
-      <button class="btn btn-outline" onclick="closeDetail()" style="padding:4px 10px;flex-shrink:0;">✕</button>
+      <button class="btn modal btn-outline" onclick="closeDetail()" style="padding:4px 10px;flex-shrink:0;border:1px solid var(--border);border-radius:3px;background:transparent;cursor:pointer;color:var(--muted);">&#x2715;</button>
     </div>
+
     <div class="modal-body" id="md-body"></div>
+
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;padding-top:12px;border-top:1px solid var(--border);flex-shrink:0;">
-      <button class="btn btn-outline" onclick="closeDetail()">Chiudi</button>
-      <button class="btn btn-purple" id="md-ai-btn" onclick="cercaInfoAIFromModal()">🤖 Cerca informazioni AI</button>
+      <button class="btn btn-outline modal" onclick="closeDetail()" style="border:1px solid var(--border);background:transparent;border-radius:3px;font-family:'Source Serif 4',serif;color:var(--text-secondary);cursor:pointer;padding:7px 14px;">Chiudi</button>
+      <button class="btn btn-modal-ai modal" id="md-ai-btn" onclick="cercaInfoAIFromModal()" style="padding:7px 14px;border:1px solid rgba(139,105,20,0.4);background:transparent;border-radius:3px;color:var(--gold);font-family:'Source Serif 4',serif;cursor:pointer;">&#x2728; Cerca informazioni AI</button>
     </div>
     <div id="md-ai-result" style="margin-top:12px;display:none;padding-top:12px;border-top:1px solid var(--border);flex-shrink:0;"></div>
   </div>
 </div>
+
+<!-- MODALE RICERCA AI -->
 <div class="overlay" id="overlay-ai">
   <div class="modal">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-      <div class="modal-title">🤖 Cerca cantieri con AI</div>
-      <button class="btn btn-outline" onclick="closeAI()" style="padding:4px 10px;">✕</button>
+      <div class="modal-title">Ricerca cantieri con AI</div>
+      <button onclick="closeAI()" style="padding:4px 10px;border:1px solid var(--border);border-radius:3px;background:transparent;cursor:pointer;color:var(--muted);font-family:'Source Serif 4',serif;">&#x2715;</button>
     </div>
     <div class="modal-sub">L'AI cerca cantieri reali dai giornali italiani recenti usando la ricerca web e li aggiunge direttamente a CantierTrack.</div>
+
     <div style="display:flex;gap:8px;margin-bottom:12px;">
-      <input id="ai-q" type="text" placeholder="Parola chiave opzionale (es. Milano, ospedale, A1...)"
-        style="flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none;font-family:'DM Sans',sans-serif;">
-      <button class="btn btn-purple" id="btn-ai" onclick="cercaAI()">🔍 Cerca</button>
+      <input id="ai-q" type="text" class="modal-input" placeholder="Parola chiave opzionale (es. Milano, ospedale, A1...)">
+      <button class="btn" id="btn-ai" onclick="cercaAI()" style="background:var(--accent);color:#fff;border:none;border-radius:3px;padding:8px 16px;font-family:'Source Serif 4',serif;cursor:pointer;">Cerca</button>
     </div>
+
     <div style="margin-bottom:14px;">
       <span class="ai-chip on" onclick="toggleAiChip(this,'infrastrutture')">Infrastrutture</span>
       <span class="ai-chip on" onclick="toggleAiChip(this,'edilizia pubblica')">Edilizia pubblica</span>
@@ -231,28 +586,28 @@ tr:hover td{background:var(--surface2);}
       <span class="ai-chip" onclick="toggleAiChip(this,'ponti viadotti')">Ponti</span>
       <span class="ai-chip" onclick="toggleAiChip(this,'energia rinnovabile')">Energia</span>
     </div>
-    <div id="ai-status" style="font-size:12px;color:var(--muted);margin-bottom:10px;min-height:20px;display:flex;align-items:center;gap:8px;"></div>
+
+    <div id="ai-status" style="font-size:12px;color:var(--muted);margin-bottom:10px;min-height:20px;display:flex;align-items:center;gap:8px;font-style:italic;"></div>
     <div class="modal-body" id="ai-results"></div>
+
     <div class="modal-footer">
-      <span style="font-size:11px;color:var(--muted);flex:1;align-self:center;" id="ai-sel-count"></span>
-      <button class="btn btn-outline" onclick="aiSelAll()">✓ Tutti</button>
-      <button class="btn btn-outline" onclick="closeAI()">Chiudi</button>
-      <button class="btn btn-purple" id="btn-ai-add" onclick="aggiungiAI()" disabled>＋ Aggiungi a CantierTrack</button>
+      <span style="font-size:11px;color:var(--muted);flex:1;align-self:center;font-style:italic;" id="ai-sel-count"></span>
+      <button onclick="aiSelAll()" style="border:1px solid var(--border);background:transparent;border-radius:3px;padding:7px 14px;font-family:'Source Serif 4',serif;cursor:pointer;color:var(--text-secondary);">Seleziona tutti</button>
+      <button onclick="closeAI()" style="border:1px solid var(--border);background:transparent;border-radius:3px;padding:7px 14px;font-family:'Source Serif 4',serif;cursor:pointer;color:var(--text-secondary);">Chiudi</button>
+      <button id="btn-ai-add" onclick="aggiungiAI()" disabled style="background:var(--accent);color:#fff;border:none;border-radius:3px;padding:7px 14px;font-family:'Source Serif 4',serif;cursor:pointer;opacity:0.4;">+ Aggiungi a CantierTrack</button>
     </div>
   </div>
 </div>
 
 <div class="loading" id="loading">
   <div class="big-spinner"></div>
-  <div class="loading-text" id="loading-text">Caricamento...</div>
+  <div class="loading-text" id="loading-text">Caricamento in corso...</div>
 </div>
 <div class="toast" id="toast"></div>
 
 <script>
-// ── CONFIGURAZIONE — modifica questi URL dopo il deploy ───────
 const GITHUB_DATA_URL = 'https://raw.githubusercontent.com/Francesco483/CantierTrack/main/data/cantieri.json';
 const RAILWAY_AI_URL  = 'https://web-production-927bb.up.railway.app';
-// ─────────────────────────────────────────────────────────────
 
 let allCantieri=[], filtered=[], selectedId=null;
 let statoFilter='tutti', sortField='nome', sortDir=1;
@@ -264,7 +619,9 @@ async function init(){ initMap(); await loadData(); }
 
 function initMap(){
   map=L.map('map').setView([41.9,12.5],6);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap © CARTO',maxZoom:19}).addTo(map);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
+    attribution:'© OpenStreetMap © CARTO',maxZoom:19
+  }).addTo(map);
 }
 
 function renderMarkers(){
@@ -272,14 +629,17 @@ function renderMarkers(){
   let count=0;
   filtered.forEach(c=>{
     if(!c.lat||!c.lng) return;
-    const col=c.stato==='attivo'?'#2ecc71':c.stato==='pianificato'?'#4a9eff':c.stato==='sospeso'?'#e05c2a':'#6b7280';
-    const icon=L.divIcon({html:`<div style="width:10px;height:10px;border-radius:50%;background:${col};border:2px solid rgba(255,255,255,0.4);box-shadow:0 0 6px ${col}66;"></div>`,iconSize:[10,10],className:''});
+    const col=c.stato==='attivo'?'#1A5C35':c.stato==='pianificato'?'#1A3B8B':c.stato==='sospeso'?'#8B1A1A':'#8A857C';
+    const icon=L.divIcon({
+      html:`<div style="width:10px;height:10px;border-radius:50%;background:${col};border:2px solid rgba(255,255,255,0.8);box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>`,
+      iconSize:[10,10],className:''
+    });
     const m=L.marker([c.lat,c.lng],{icon}).addTo(map);
-    m.bindPopup(`<b>${c.nome}</b><br>${c.citta||''}<br>€${fmt(c.valore)}`);
+    m.bindPopup(`<b style="font-family:'Source Serif 4',serif;">${c.nome}</b><br><span style="color:#666;">${c.citta||''}</span><br><span style="font-family:'DM Mono',monospace;">€${fmt(c.valore)}</span>`);
     m.on('click',()=>selectCantiere(c.id));
     markers.push(m); count++;
   });
-  document.getElementById('map-count').textContent=count>0?count+' punti sulla mappa':'';
+  document.getElementById('map-count').textContent=count>0?count+' geo-localizzati':'';
 }
 
 async function loadData(){
@@ -291,16 +651,16 @@ async function loadData(){
     allCantieri=data.cantieri||[];
     if(data.aggiornato){
       const d=new Date(data.aggiornato);
-      document.getElementById('last-update').textContent=d.toLocaleDateString('it-IT')+' '+d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+      document.getElementById('last-update').textContent='Agg. '+d.toLocaleDateString('it-IT');
     }
     applyFilters();
     if(allCantieri.length>0){
-      toast('✅ '+allCantieri.length.toLocaleString('it')+' cantieri caricati','ok');
+      toast('Caricati '+allCantieri.length.toLocaleString('it')+' cantieri','ok');
     } else {
-      toast('⚠ Nessun dato disponibile — esegui il workflow GitHub Actions','');
+      toast('Nessun dato disponibile — eseguire il workflow GitHub Actions','');
     }
   }catch(e){
-    toast('❌ Errore caricamento: '+e.message,'err');
+    toast('Errore caricamento: '+e.message,'err');
   }
   hideLoading();
 }
@@ -329,26 +689,31 @@ function sortBy(f){ if(sortField===f)sortDir*=-1; else{sortField=f;sortDir=1;} a
 function renderList(){
   document.getElementById('list-count').textContent=filtered.length.toLocaleString('it')+' cantieri';
   const el=document.getElementById('list');
-  if(!filtered.length){el.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted);">Nessun cantiere trovato</div>';return;}
+  if(!filtered.length){
+    el.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted);font-style:italic;font-size:12px;">Nessun cantiere trovato</div>';
+    return;
+  }
   el.innerHTML=filtered.slice(0,300).map(c=>`
     <div class="card${c.id==selectedId?' active':''}" data-id="${c.id}" onclick="selectCantiere(${JSON.stringify(c.id)})">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:5px;">
         <div class="card-nome">${c.nome||'—'}</div>
         <span class="badge badge-${c.stato||'attivo'}">${c.stato||'—'}</span>
       </div>
       <div class="card-meta">
-        <span class="card-citta">📍 ${c.citta||'—'}</span>
+        <span class="card-citta">${c.citta||'—'}</span>
         <span class="card-valore">${c.valore?'€'+fmt(c.valore):'—'}</span>
       </div>
     </div>`).join('');
-  if(filtered.length>300)el.innerHTML+=`<div style="padding:10px;text-align:center;color:var(--muted);font-size:11px;">+ altri ${(filtered.length-300).toLocaleString('it')} — usa la ricerca per filtrare</div>`;
+  if(filtered.length>300){
+    el.innerHTML+=`<div style="padding:10px;text-align:center;color:var(--muted);font-size:11px;font-style:italic;">+${(filtered.length-300).toLocaleString('it')} cantieri — usare la ricerca per filtrare</div>`;
+  }
 }
 
 function renderTable(){
   document.getElementById('tbody').innerHTML=filtered.slice(0,500).map(c=>`<tr onclick="selectCantiere(${JSON.stringify(c.id)})" style="cursor:pointer;">
     <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${c.nome||''}">${c.nome||'—'}</td>
     <td>${c.citta||'—'}</td>
-    <td style="text-align:right;color:var(--yellow);">${c.valore?'€'+fmt(c.valore):'—'}</td>
+    <td style="text-align:right;color:var(--gold);font-family:'DM Mono',monospace;">${c.valore?'€'+fmt(c.valore):'—'}</td>
     <td><span class="badge badge-${c.stato||'attivo'}">${c.stato||'—'}</span></td>
     <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${c.stazione||'—'}</td>
     <td style="font-size:11px;color:var(--muted);">${c.ente||c.fonte||'—'}</td>
@@ -364,7 +729,7 @@ function selectCantiere(id){
   document.getElementById('detail-content').style.display='flex';
   document.getElementById('d-nome').textContent=c.nome||'—';
   document.getElementById('d-valore').textContent=c.valore?'€'+fmt(c.valore):'—';
-  document.getElementById('d-citta').textContent='📍 '+(c.citta||'—')+(c.regione?', '+c.regione:'');
+  document.getElementById('d-citta').textContent=(c.citta||'—')+(c.regione?', '+c.regione:'');
   const b=document.getElementById('d-badge');
   b.textContent=c.stato||'—'; b.className='badge badge-'+(c.stato||'attivo');
   const rows=[
@@ -383,17 +748,16 @@ function selectCantiere(id){
       <span class="detail-label">${r[0]}</span>
       <span class="detail-val">${r[1]}</span>
     </div>`).join('')
-    +(c.url?`<div style="margin-top:12px;"><a href="${c.url}" target="_blank" style="color:var(--blue);font-size:12px;">🔗 Apri documento ufficiale</a></div>`:'')
-    +`<div style="margin-top:12px;display:flex;gap:8px;">
-      <button onclick="openDetail(${numId})" class="btn btn-yellow" style="flex:1;justify-content:center;padding:9px;">
-        📋 Dettaglio completo
+    +(c.url?`<div style="margin-top:12px;"><a href="${c.url}" target="_blank">&#x1F517; Documento ufficiale</a></div>`:'')
+    +`<div style="margin-top:14px;display:flex;gap:7px;">
+      <button onclick="openDetail(${numId})" style="flex:1;padding:8px;background:var(--accent);color:#fff;border:none;border-radius:3px;cursor:pointer;font-family:'Source Serif 4',serif;font-size:12px;">
+        Dettaglio completo
       </button>
-      <button onclick="cercaInfoAI(${numId})" class="btn btn-purple" style="flex:1;justify-content:center;padding:9px;">
-        🤖 Cerca AI
+      <button onclick="cercaInfoAI(${numId})" style="flex:1;padding:8px;background:transparent;border:1px solid rgba(139,105,20,0.4);color:var(--gold);border-radius:3px;cursor:pointer;font-family:'Source Serif 4',serif;font-size:12px;">
+        Cerca AI
       </button>
     </div>
-    <div id="ai-info-result" style="margin-top:10px;font-size:12px;color:var(--muted);line-height:1.6;display:none;"></div>`;
-  // Aggiorna evidenziazione nella lista
+    <div id="ai-info-result" style="margin-top:10px;font-size:12px;color:var(--text-secondary);line-height:1.6;display:none;"></div>`;
   document.querySelectorAll('.card').forEach(el=>el.classList.remove('active'));
   const activeCard=document.querySelector(`.card[data-id="${numId}"]`);
   if(activeCard) activeCard.classList.add('active');
@@ -427,7 +791,8 @@ async function cercaAI(){
   btn.disabled=true; aiCantieri=[]; aiSelected=new Set();
   document.getElementById('ai-results').innerHTML='';
   document.getElementById('btn-ai-add').disabled=true;
-  status.innerHTML='<span class="spinner" style="color:var(--purple);"></span>&nbsp;Ricerca AI in corso...';
+  document.getElementById('btn-ai-add').style.opacity='0.4';
+  status.innerHTML='<span class="spinner" style="color:var(--accent);"></span>&nbsp;Ricerca AI in corso...';
   try{
     const resp=await fetch(RAILWAY_AI_URL+'/api/ai/cerca',{
       method:'POST',headers:{'Content-Type':'application/json'},
@@ -440,7 +805,8 @@ async function cercaAI(){
     status.textContent=aiCantieri.length+' cantieri trovati';
     renderAIResults();
     document.getElementById('btn-ai-add').disabled=aiSelected.size===0;
-  }catch(e){status.innerHTML=`<span style="color:var(--red);">❌ ${e.message}</span>`;}
+    if(aiSelected.size>0) document.getElementById('btn-ai-add').style.opacity='1';
+  }catch(e){status.innerHTML=`<span style="color:var(--red);">Errore: ${e.message}</span>`;}
   btn.disabled=false;
 }
 
@@ -450,30 +816,39 @@ function renderAIResults(){
     const v=c.valore?'€'+(c.valore>=1e9?(c.valore/1e9).toFixed(1)+'Mld':c.valore>=1e6?(c.valore/1e6).toFixed(1)+'M':(c.valore/1000).toFixed(0)+'K'):'—';
     return `<div class="ai-card${sel?' sel':''}" onclick="toggleAiCard('${c.id}')">
       <div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:5px;">
-        <strong style="font-size:13px;">${c.nome}</strong>
+        <strong style="font-size:13px;font-family:'Source Serif 4',serif;font-weight:500;">${c.nome}</strong>
         <span class="badge badge-${c.stato||'attivo'}" style="flex-shrink:0;">${c.stato||'—'}</span>
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;">
-        <span style="font-size:11px;color:var(--muted);">📍 ${c.citta||'—'}${c.regione?', '+c.regione:''}</span>
-        <span style="font-size:11px;color:var(--yellow);">💶 ${v}</span>
-        ${c.stazione?`<span style="font-size:11px;color:var(--muted);">🏛 ${c.stazione}</span>`:''}
+        <span style="font-size:11px;color:var(--muted);">${c.citta||'—'}${c.regione?', '+c.regione:''}</span>
+        <span style="font-size:11px;color:var(--gold);font-family:'DM Mono',monospace;">${v}</span>
+        ${c.stazione?`<span style="font-size:11px;color:var(--muted);">${c.stazione}</span>`:''}
       </div>
-      ${c.descrizione?`<div style="font-size:11px;color:var(--muted);margin-top:5px;">${c.descrizione}</div>`:''}
-      ${c.fonte?`<div style="font-size:10px;opacity:0.5;margin-top:3px;">📰 ${c.fonte}</div>`:''}
+      ${c.descrizione?`<div style="font-size:11px;color:var(--text-secondary);margin-top:5px;line-height:1.5;font-style:italic;">${c.descrizione}</div>`:''}
+      ${c.fonte?`<div style="font-size:10px;color:var(--muted);margin-top:3px;">Fonte: ${c.fonte}</div>`:''}
     </div>`;
   }).join('');
   document.getElementById('ai-sel-count').textContent=aiSelected.size+' selezionati';
 }
 
-function toggleAiCard(id){if(aiSelected.has(id))aiSelected.delete(id);else aiSelected.add(id);renderAIResults();document.getElementById('btn-ai-add').disabled=aiSelected.size===0;}
-function aiSelAll(){aiSelected=new Set(aiCantieri.map(c=>c.id));renderAIResults();document.getElementById('btn-ai-add').disabled=false;}
+function toggleAiCard(id){
+  if(aiSelected.has(id))aiSelected.delete(id);else aiSelected.add(id);
+  renderAIResults();
+  document.getElementById('btn-ai-add').disabled=aiSelected.size===0;
+  document.getElementById('btn-ai-add').style.opacity=aiSelected.size>0?'1':'0.4';
+}
+function aiSelAll(){
+  aiSelected=new Set(aiCantieri.map(c=>c.id));renderAIResults();
+  document.getElementById('btn-ai-add').disabled=false;
+  document.getElementById('btn-ai-add').style.opacity='1';
+}
 
 function aggiungiAI(){
   const toAdd=aiCantieri.filter(c=>aiSelected.has(c.id));
   let nextId=allCantieri.length+1;
   toAdd.forEach(c=>{c.id=nextId++;allCantieri.push(c);});
   applyFilters(); updateStats();
-  toast('✅ '+toAdd.length+' cantieri AI aggiunti!','ok');
+  toast(toAdd.length+' cantieri AI aggiunti con successo','ok');
   closeAI();
 }
 
@@ -490,31 +865,29 @@ function openDetail(id){
   const b = document.getElementById('md-badge');
   b.textContent = c.stato||'—'; b.className = 'badge badge-'+(c.stato||'attivo');
 
-  // Sezioni dettaglio
   const sezioni = [
-    { titolo: '📍 Localizzazione', campi: [['Città', c.citta], ['Regione', c.regione]] },
-    { titolo: '📋 Appalto', campi: [['Tipo', c.tipo], ['Intervento', c.tipoIntervento], ['Procedura', c.tipoProcedura]] },
-    { titolo: '🏛 Stazione appaltante', campi: [['Ente', c.stazione], ['RUP', c.rup]] },
-    { titolo: '🔢 Identificativi', campi: [['CIG', c.cig], ['CUP', c.cup]] },
-    { titolo: '📅 Tempistiche', campi: [['Inizio', c.inizio], ['Scadenza', c.fine_prevista]] },
-    { titolo: '📰 Fonte', campi: [['Origine', c.fonte||c.ente]] },
+    { titolo: 'Localizzazione', campi: [['Città', c.citta], ['Regione', c.regione]] },
+    { titolo: 'Appalto', campi: [['Tipo', c.tipo], ['Intervento', c.tipoIntervento], ['Procedura', c.tipoProcedura]] },
+    { titolo: 'Stazione appaltante', campi: [['Ente', c.stazione], ['RUP', c.rup]] },
+    { titolo: 'Identificativi', campi: [['CIG', c.cig], ['CUP', c.cup]] },
+    { titolo: 'Tempistiche', campi: [['Inizio', c.inizio], ['Scadenza', c.fine_prevista]] },
+    { titolo: 'Fonte', campi: [['Origine', c.fonte||c.ente]] },
   ];
 
   document.getElementById('md-body').innerHTML = sezioni.map(s => {
     const campiHtml = s.campi.filter(([,v]) => v && v !== '—').map(([k,v]) => `
-      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);gap:16px;">
-        <span style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;flex-shrink:0;">${k}</span>
+      <div class="modal-row">
+        <span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;flex-shrink:0;font-weight:300;">${k}</span>
         <span style="font-size:12px;color:var(--text);text-align:right;word-break:break-word;">${v}</span>
       </div>`).join('');
     if(!campiHtml) return '';
-    return `<div style="margin-bottom:16px;">
-      <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px;">${s.titolo}</div>
+    return `<div style="margin-bottom:18px;">
+      <div class="modal-section-title">${s.titolo}</div>
       ${campiHtml}
     </div>`;
   }).join('')
-  + (c.url ? `<div style="margin-top:8px;"><a href="${c.url}" target="_blank" style="color:var(--blue);font-size:12px;">🔗 Apri documento ufficiale</a></div>` : '');
+  + (c.url ? `<div style="margin-top:8px;"><a href="${c.url}" target="_blank">&#x1F517; Apri documento ufficiale</a></div>` : '');
 
-  // Salva l'ID per la ricerca AI
   document.getElementById('md-ai-btn').dataset.id = id;
   document.getElementById('md-ai-result').style.display = 'none';
   document.getElementById('md-ai-result').innerHTML = '';
@@ -533,9 +906,9 @@ async function cercaInfoAIFromModal(){
   const btn = document.getElementById('md-ai-btn');
   const resultDiv = document.getElementById('md-ai-result');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner" style="color:var(--purple);"></span>&nbsp;Ricerca...';
+  btn.innerHTML = '<span class="spinner" style="color:var(--gold);"></span>&nbsp;Ricerca in corso...';
   resultDiv.style.display = 'block';
-  resultDiv.innerHTML = '<span style="color:var(--muted);font-size:12px;">Ricerca informazioni in corso...</span>';
+  resultDiv.innerHTML = '<span style="color:var(--muted);font-size:12px;font-style:italic;">Ricerca informazioni in corso...</span>';
 
   try{
     const resp = await fetch(RAILWAY_AI_URL+'/api/ai/cerca-cantiere', {
@@ -547,27 +920,29 @@ async function cercaInfoAIFromModal(){
     let html = data.html || 'Nessuna informazione trovata.';
     html = html.replace(/```html/gi,'').replace(/```/g,'').trim();
     html = html
-      .replace(/<p>/g,'<p style="margin-bottom:8px;color:var(--muted);font-size:12px;line-height:1.6;">')
+      .replace(/<p>/g,'<p style="margin-bottom:8px;color:var(--text-secondary);font-size:12px;line-height:1.6;">')
       .replace(/<strong>/g,'<strong style="color:var(--text);">')
       .replace(/<ul>/g,'<ul style="margin:6px 0 8px 16px;">')
-      .replace(/<li>/g,'<li style="color:var(--muted);font-size:12px;margin-bottom:3px;">');
-    resultDiv.innerHTML = `<div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:8px;">🤖 Risultati ricerca AI</div>${html}`;
+      .replace(/<li>/g,'<li style="color:var(--text-secondary);font-size:12px;margin-bottom:3px;">');
+    resultDiv.innerHTML = `<div style="font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);margin-bottom:8px;font-weight:300;">Risultati ricerca AI</div>${html}`;
   }catch(e){
-    resultDiv.innerHTML = `<span style="color:var(--red);font-size:12px;">❌ ${e.message}</span>`;
+    resultDiv.innerHTML = `<span style="color:var(--red);font-size:12px;">Errore: ${e.message}</span>`;
   }
   btn.disabled = false;
-  btn.innerHTML = '🤖 Cerca informazioni AI';
+  btn.innerHTML = '&#x2728; Cerca informazioni AI';
 }
+
+async function cercaInfoAI(id){
   const c=allCantieri.find(x=>x.id==id);
   if(!c) return;
   const resultDiv=document.getElementById('ai-info-result');
-  const btn=document.querySelector('#d-body button');
+  const btn=document.querySelector('#d-body button:last-of-type');
   if(!btn||!resultDiv) return;
 
   btn.disabled=true;
-  btn.innerHTML='<span class="spinner" style="color:var(--purple);"></span>&nbsp;Ricerca in corso...';
+  btn.innerHTML='<span class="spinner" style="color:var(--gold);"></span>&nbsp;Ricerca...';
   resultDiv.style.display='block';
-  resultDiv.innerHTML='<span style="color:var(--muted);">L\'AI sta cercando informazioni su questo cantiere...</span>';
+  resultDiv.innerHTML='<span style="color:var(--muted);font-style:italic;">Ricerca informazioni in corso...</span>';
 
   try{
     const resp=await fetch(RAILWAY_AI_URL+'/api/ai/cerca-cantiere',{
@@ -587,24 +962,22 @@ async function cercaInfoAIFromModal(){
     }
     const data=await resp.json();
     let html = data.html || 'Nessuna informazione trovata.';
-    // Pulizia markdown residuo
     html = html.replace(/```html/gi,'').replace(/```/g,'').trim();
-    // Applica stili inline ai tag HTML per dark theme
     html = html
-      .replace(/<p>/g,'<p style="margin-bottom:8px;color:var(--muted);font-size:12px;line-height:1.6;">')
+      .replace(/<p>/g,'<p style="margin-bottom:8px;color:var(--text-secondary);font-size:12px;line-height:1.6;">')
       .replace(/<strong>/g,'<strong style="color:var(--text);">')
       .replace(/<ul>/g,'<ul style="margin:6px 0 8px 16px;">')
-      .replace(/<li>/g,'<li style="color:var(--muted);font-size:12px;margin-bottom:3px;">');
+      .replace(/<li>/g,'<li style="color:var(--text-secondary);font-size:12px;margin-bottom:3px;">');
     resultDiv.innerHTML = `
       <div style="border-top:1px solid var(--border);padding-top:10px;margin-top:4px;">
-        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:8px;">🤖 Risultati ricerca AI</div>
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);margin-bottom:8px;font-weight:300;">Risultati ricerca AI</div>
         ${html}
       </div>`;
   }catch(e){
-    resultDiv.innerHTML=`<span style="color:var(--red);">❌ ${e.message}</span>`;
+    resultDiv.innerHTML=`<span style="color:var(--red);font-size:12px;">Errore: ${e.message}</span>`;
   }
   btn.disabled=false;
-  btn.innerHTML='🤖 Cerca informazioni con AI';
+  btn.innerHTML='Cerca AI';
 }
 
 window.onload=init;
