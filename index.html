@@ -1123,6 +1123,8 @@ function scaricaBOTasTTL(c, d){
     .replace(/\r/g,'').replace(/\n/g,'\\n').replace(/\t/g,'\\t') + '"';
   // Slug per il nome del file scaricato
   const cigSlug = (c.cig||'cantiere').replace(/[^a-z0-9]/gi,'_');
+  // Campo valorizzato? (scarta vuoti e placeholder "—")
+  const has = v => v!=null && String(v).trim()!=='' && String(v).trim()!=='—';
 
   // ── Raggruppamenti gerarchici tramite indici ──
   const storeys = d.storeys || [];
@@ -1143,16 +1145,34 @@ function scaricaBOTasTTL(c, d){
   const subsOfElem     = i => subs.map((se,idx)=>({se,idx})).filter(o => (o.se.element_index||0)===i);
 
   const L = [];
-  L.push('@prefix bot:  <https://w3id.org/bot#> .');
-  L.push('@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .');
+  L.push('@prefix bot:    <https://w3id.org/bot#> .');
+  L.push('@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .');
+  L.push('@prefix schema: <https://schema.org/> .');
   L.push('');
   L.push(`# Building Topology Ontology (BOT) W3C — https://w3c-lbd-cg.github.io/bot/`);
+  L.push(`# Dati amministrativi del bando modellati con schema.org (https://schema.org/)`);
   L.push(`# Grafo generato da CantierTrack · ${new Date().toISOString()}`);
   L.push(`# Rappresenta l'ambito dei lavori del cantiere ${c.cig||''}`);
   L.push('');
 
-  // ── bot:Site → bot:hasBuilding ──
-  L.push(`${siteId} rdfs:label ${lit((d.site&&d.site.label)||c.citta||'Site')} ;\n    bot:hasBuilding ${buildingId} .`);
+  // ── bot:Site → bot:hasBuilding (+ localizzazione schema.org) ──
+  const hasAddr = has(c.citta) || has(c.regione);
+  const hasGeo  = has(c.lat) && has(c.lng);
+  let site = `${siteId} rdfs:label ${lit((d.site&&d.site.label)||c.citta||'Site')}`;
+  if(hasAddr) site += ` ;\n    schema:address schema:PostalAddress`;
+  if(hasGeo)  site += ` ;\n    schema:geo schema:GeoCoordinates`;
+  site += ` ;\n    bot:hasBuilding ${buildingId} .`;
+  L.push(site);
+  if(hasAddr){
+    const addr = [];
+    if(has(c.citta))   addr.push(`schema:addressLocality ${lit(c.citta)}`);
+    if(has(c.regione)) addr.push(`schema:addressRegion ${lit(c.regione)}`);
+    addr.push('schema:addressCountry "IT"');
+    L.push('schema:PostalAddress ' + addr.join(' ;\n    ') + ' .');
+  }
+  if(hasGeo){
+    L.push(`schema:GeoCoordinates schema:latitude ${c.lat} ;\n    schema:longitude ${c.lng} .`);
+  }
   L.push('');
 
   // ── bot:Building → bot:hasStorey ──
@@ -1192,6 +1212,33 @@ function scaricaBOTasTTL(c, d){
   subs.forEach((se,i) => {
     L.push(`${subId(i)} rdfs:label ${lit(se.label)} .`);
   });
+  L.push('');
+
+  // ── Metadati amministrativi del bando (schema.org) ──
+  L.push('# ── Metadati del bando (schema.org) ──');
+  const val = parseFloat(c.valore);
+  const sc = [];
+  if(has(c.cig)) sc.push(`schema:identifier ${lit(c.cig)}`);
+  if(has(c.cup)) sc.push(`schema:identifier ${lit('CUP ' + c.cup)}`);
+  if(has(c.tipo)) sc.push(`schema:additionalType ${lit(c.tipo)}`);
+  const descr = [];
+  if(has(c.tipoProcedura)) descr.push('Procedura: ' + c.tipoProcedura);
+  if(has(c.tipoIntervento)) descr.push('Intervento: ' + c.tipoIntervento);
+  if(has(c.stato))         descr.push('Stato: ' + c.stato);
+  if(descr.length) sc.push(`schema:disambiguatingDescription ${lit(descr.join(' · '))}`);
+  if(has(c.inizio))        sc.push(`schema:startDate ${lit(c.inizio)}`);
+  if(has(c.fine_prevista)) sc.push(`schema:endDate ${lit(c.fine_prevista)}`);
+  if(!isNaN(val))      sc.push('schema:estimatedCost schema:MonetaryAmount');
+  if(has(c.stazione))  sc.push('schema:funder schema:GovernmentOrganization');
+  if(has(c.ente))      sc.push(`schema:sourceOrganization ${lit(c.ente)}`);
+  if(has(c.rup))       sc.push('schema:accountablePerson schema:Person');
+  sc.push(`schema:about ${buildingId}`);
+  L.push('schema:Project rdfs:label ' + lit(c.nome) + ' ;\n    ' + sc.join(' ;\n    ') + ' .');
+  if(has(c.stazione)) L.push(`schema:GovernmentOrganization rdfs:label ${lit(c.stazione)} .`);
+  if(has(c.rup))      L.push(`schema:Person rdfs:label ${lit(c.rup)} .`);
+  if(!isNaN(val)){
+    L.push(`schema:MonetaryAmount schema:value ${lit(String(val))} ;\n    schema:currency "EUR" .`);
+  }
 
   const ttl = L.join('\n') + '\n';
 
