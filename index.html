@@ -794,9 +794,14 @@ function selectCantiere(id){
           Cerca AI
         </button>
       </div>
-      <button onclick="generaBOT(${numId})" style="width:100%;padding:8px;background:transparent;border:1px solid rgba(27,58,92,0.4);color:var(--accent);border-radius:3px;cursor:pointer;font-family:'Source Serif 4',serif;font-size:12px;letter-spacing:0.3px;">
-        Esporta grafo BOT
-      </button>
+      <div style="display:flex;gap:7px;">
+        <button onclick="generaBOT(${numId})" style="flex:1;padding:8px;background:transparent;border:1px solid rgba(27,58,92,0.4);color:var(--accent);border-radius:3px;cursor:pointer;font-family:'Source Serif 4',serif;font-size:12px;letter-spacing:0.3px;">
+          Esporta grafo BOT
+        </button>
+        <button onclick="generaBOTTurtle(${numId})" style="flex:1;padding:8px;background:transparent;border:1px solid rgba(27,58,92,0.4);color:var(--accent);border-radius:3px;cursor:pointer;font-family:'Source Serif 4',serif;font-size:12px;letter-spacing:0.3px;">
+          Esporta Turtle (.ttl)
+        </button>
+      </div>
     </div>
     <div id="ai-info-result" style="margin-top:10px;font-size:12px;color:var(--text-secondary);line-height:1.6;display:none;"></div>`;
   document.querySelectorAll('.card').forEach(el=>el.classList.remove('active'));
@@ -1079,6 +1084,125 @@ async function generaBOT(id){
     toast('Errore BOT: '+e.message, 'err');
   }
   if(btn){ btn.disabled=false; btn.textContent='Esporta grafo BOT'; }
+}
+
+// ── Export Turtle (.ttl) — stessa logica/dati di generaBOT ──
+async function generaBOTTurtle(id){
+  const c = allCantieri.find(x => Number(x.id) === Number(id));
+  if(!c) return;
+
+  const btn = document.querySelector(`button[onclick="generaBOTTurtle(${id})"]`);
+  if(btn){ btn.disabled=true; btn.textContent='Generazione TTL...'; }
+
+  toast('Analisi BOT in corso...', '');
+
+  try{
+    const resp = await fetch(RAILWAY_AI_URL+'/api/ai/bot-ontology', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        nome: c.nome, cig: c.cig, stazione: c.stazione,
+        valore: c.valore, citta: c.citta,
+        tipo: c.tipo, tipoIntervento: c.tipoIntervento,
+        tipoProcedura: c.tipoProcedura
+      })
+    });
+    if(!resp.ok){ const e=await resp.json(); throw new Error(e.detail||'Errore '+resp.status); }
+    const botData = await resp.json();
+    scaricaBOTasTTL(c, botData);
+    toast('File Turtle generato!', 'ok');
+  } catch(e){
+    toast('Errore BOT: '+e.message, 'err');
+  }
+  if(btn){ btn.disabled=false; btn.textContent='Esporta Turtle (.ttl)'; }
+}
+
+function scaricaBOTasTTL(c, d){
+  // Escape di un literal stringa Turtle
+  const lit = s => '"' + String(s==null?'':s)
+    .replace(/\\/g,'\\\\').replace(/"/g,'\\"')
+    .replace(/\r/g,'').replace(/\n/g,'\\n').replace(/\t/g,'\\t') + '"';
+  // Slug per il nome del file scaricato
+  const cigSlug = (c.cig||'cantiere').replace(/[^a-z0-9]/gi,'_');
+
+  // ── Raggruppamenti gerarchici tramite indici ──
+  const storeys = d.storeys || [];
+  const spaces  = d.spaces  || [];
+  const elements = d.elements || [];
+  const subs = d.sub_elements || [];
+
+  // Identificatori dei nodi nel namespace bot: (niente inst:, nessun rdf:type)
+  const siteId = 'bot:Site';
+  const buildingId = 'bot:Building';
+  const storeyId = i => 'bot:Storey' + (storeys.length>1 ? '_'+(i+1) : '');
+  const spaceId  = i => 'bot:Space'  + (spaces.length>1  ? '_'+(i+1) : '');
+  const elementId = i => 'bot:Element_' + (i+1);
+  const subId = i => 'bot:Element_' + (elements.length + i + 1);
+
+  const spacesOfStorey = i => spaces.map((s,idx)=>({s,idx})).filter(o => (o.s.storey_index||0)===i);
+  const elemsOfSpace   = i => elements.map((e,idx)=>({e,idx})).filter(o => (o.e.space_index||0)===i);
+  const subsOfElem     = i => subs.map((se,idx)=>({se,idx})).filter(o => (o.se.element_index||0)===i);
+
+  const L = [];
+  L.push('@prefix bot:  <https://w3id.org/bot#> .');
+  L.push('@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .');
+  L.push('');
+  L.push(`# Building Topology Ontology (BOT) W3C — https://w3c-lbd-cg.github.io/bot/`);
+  L.push(`# Grafo generato da CantierTrack · ${new Date().toISOString()}`);
+  L.push(`# Rappresenta l'ambito dei lavori del cantiere ${c.cig||''}`);
+  L.push('');
+
+  // ── bot:Site → bot:hasBuilding ──
+  L.push(`${siteId} rdfs:label ${lit((d.site&&d.site.label)||c.citta||'Site')} ;\n    bot:hasBuilding ${buildingId} .`);
+  L.push('');
+
+  // ── bot:Building → bot:hasStorey ──
+  let bldg = `${buildingId} rdfs:label ${lit((d.building&&d.building.label)||'Building')}`;
+  if(storeys.length) bldg += ` ;\n    bot:hasStorey ${storeys.map((_,i)=>storeyId(i)).join(' , ')}`;
+  L.push(bldg + ' .');
+  L.push('');
+
+  // ── bot:Storey → bot:hasSpace ──
+  storeys.forEach((s,i) => {
+    let t = `${storeyId(i)} rdfs:label ${lit(s.label)}`;
+    const sp = spacesOfStorey(i);
+    if(sp.length) t += ` ;\n    bot:hasSpace ${sp.map(o=>spaceId(o.idx)).join(' , ')}`;
+    L.push(t + ' .');
+  });
+  if(storeys.length) L.push('');
+
+  // ── bot:Space → bot:hasElement ──
+  spaces.forEach((s,i) => {
+    let t = `${spaceId(i)} rdfs:label ${lit(s.label)}`;
+    const el = elemsOfSpace(i);
+    if(el.length) t += ` ;\n    bot:hasElement ${el.map(o=>elementId(o.idx)).join(' , ')}`;
+    L.push(t + ' .');
+  });
+  if(spaces.length) L.push('');
+
+  // ── bot:Element → bot:hasSubElement ──
+  elements.forEach((e,i) => {
+    let t = `${elementId(i)} rdfs:label ${lit(e.label)}`;
+    const su = subsOfElem(i);
+    if(su.length) t += ` ;\n    bot:hasSubElement ${su.map(o=>subId(o.idx)).join(' , ')}`;
+    L.push(t + ' .');
+  });
+  if(elements.length) L.push('');
+
+  // ── bot:Element (sotto-componenti) ──
+  subs.forEach((se,i) => {
+    L.push(`${subId(i)} rdfs:label ${lit(se.label)} .`);
+  });
+
+  const ttl = L.join('\n') + '\n';
+
+  // Download .ttl
+  const blob = new Blob([ttl], {type:'text/turtle;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.download = `BOT_${cigSlug}.ttl`;
+  link.href = url;
+  link.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
 }
 
 function scaricaBOTasJPG(c, d){
