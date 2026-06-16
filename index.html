@@ -1253,15 +1253,14 @@ function scaricaBOTasTTL(c, d){
 }
 
 function scaricaBOTasJPG(c, d){
-  const W = 780, PAD = 40;
+  const PAD = 40;
 
-  // Calcola altezza dinamica in base al numero di nodi
-  const maxNodes = Math.max(
-    (d.storeys||[]).length,
-    (d.spaces||[]).length,
-    (d.elements||[]).length
-  );
-  const H = 160 + 120 + 130 + (maxNodes > 3 ? 130 : 110) + 110 + ((d.sub_elements||[]).length > 0 ? 80 : 20) + 60;
+  // Larghezza dinamica: cresce se una riga (spaces/elements) ha molti nodi
+  const nodeGap = 170;
+  const maxRow = Math.max((d.spaces||[]).length, (d.elements||[]).length, 1);
+  const W = Math.max(780, 202 + (maxRow - 1) * nodeGap);
+
+  // (l'altezza H è calcolata più sotto, dopo il layout di tutte le sezioni)
 
   // Colori palette accademica
   const C = {
@@ -1271,6 +1270,7 @@ function scaricaBOTasJPG(c, d){
     spaceFill:'#CECBF6', spaceStroke:'#534AB7',
     elemFill:'#F5C4B3', elemStroke:'#993C1D',
     dedFill:'#F5F4F0', dedStroke:'#888780',
+    schemaFill:'#F3ECDA', schemaStroke:'#A67C2E',
     arrow:'#5A5650', line:'#B8B2A5', text:'#1A1814', muted:'#8A857C'
   };
 
@@ -1279,9 +1279,10 @@ function scaricaBOTasJPG(c, d){
     const dash = dashed ? 'stroke-dasharray="5 3"' : '';
     const t1fill = dashed ? C.muted : '#1A1814';
     const t2fill = dashed ? '#444441' : '#1A1814';
+    const fs2 = String(label2).length > 18 ? 10 : 12;   // font ridotto per etichette lunghe
     return `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${fill}" stroke="${stroke}" stroke-width="1.5" ${dash}/>
 <text x="${cx}" y="${cy-7}" text-anchor="middle" font-size="10" fill="${t1fill}" font-family="Georgia,serif">${label1}</text>
-<text x="${cx}" y="${cy+9}" text-anchor="middle" font-size="12" font-weight="bold" fill="${t2fill}" font-family="Georgia,serif">${label2}</text>`;
+<text x="${cx}" y="${cy+9}" text-anchor="middle" font-size="${fs2}" font-weight="bold" fill="${t2fill}" font-family="Georgia,serif">${label2}</text>`;
   }
 
   // Helper: freccia orizzontale con etichetta
@@ -1296,28 +1297,58 @@ ${label ? `<text x="${(x1+x2)/2}" y="${y-6}" text-anchor="middle" font-size="9" 
     return `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2-8}" stroke="${C.arrow}" stroke-width="1" ${dash} marker-end="url(#arr)"/>`;
   }
 
+  // Helper: freccia diagonale con etichetta
+  function arrowD(x1, y1, x2, y2, label=''){
+    return `<line x1="${x1}" y1="${y1}" x2="${x2-6}" y2="${y2}" stroke="${C.arrow}" stroke-width="1" marker-end="url(#arr)"/>
+${label ? `<text x="${(x1+x2)/2}" y="${(y1+y2)/2 - 5}" text-anchor="middle" font-size="9" fill="${C.muted}" font-family="Georgia,serif">${label}</text>` : ''}`;
+  }
+
   // Posizioni Y dei livelli
-  const Y = { site:130, build:130, storey1:100, storeyBase:130, space:320, elem:430 };
+  const Y = { site:150, build:150, storey1:100, storeyBase:150, space:350, elem:460 };
   const subY = Y.elem + 100;
 
   // ── Layout storeys (max 3, distribuiti verticalmente) ──
   const storeys = d.storeys || [];
   const storeyCY = storeys.map((_, i) => {
     if(storeys.length === 1) return Y.storeyBase;
-    const spread = Math.min((storeys.length-1)*80, 160);
-    return Y.storeyBase - spread/2 + i*(spread/(storeys.length-1));
+    // distribuiti VERSO IL BASSO da Y.storeyBase: così il primo non sale sopra l'intestazione
+    const gap = Math.min(78, (262 - Y.storeyBase) / (storeys.length - 1));
+    return Y.storeyBase + i * gap;
   });
 
   // ── Layout spaces ──
   const spaces = d.spaces || [];
-  const spaceRX = 72, spaceCXBase = 90;
-  const spaceGap = Math.min(150, (W-80)/(spaces.length||1));
+  const spaceRX = 72;
+  const spaceCXBase = Math.max(90, (W - (maxRow-1)*nodeGap) / 2);   // riga centrata
+  const spaceGap = nodeGap;
   const spaceCX = spaces.map((_, i) => spaceCXBase + i * spaceGap);
 
   // ── Layout elements ──
   const elements = d.elements || [];
-  const elemGap = Math.min(150, (W-80)/(elements.length||1));
+  const elemGap = nodeGap;
   const elemCX = elements.map((_, i) => spaceCXBase + i * elemGap);
+
+  // ── Layout sezione schema.org (dati amministrativi del bando) ──
+  const truncSc = s => { s=String(s||''); return s.length>24 ? s.substring(0,23)+'…' : s; };
+  const okSc = v => v!=null && String(v).trim()!=='' && String(v).trim()!=='—';
+  const schemaNodes = [];
+  if(okSc(c.stazione)) schemaNodes.push({type:'schema:GovernmentOrganization', label:truncSc(c.stazione), prop:'schema:funder'});
+  if(okSc(c.rup))      schemaNodes.push({type:'schema:Person', label:truncSc(c.rup), prop:'schema:accountablePerson'});
+  const valNum = parseFloat(c.valore);
+  if(!isNaN(valNum))   schemaNodes.push({type:'schema:MonetaryAmount', label:'€ '+fmt(c.valore), prop:'schema:estimatedCost'});
+
+  const hasSubs = (d.sub_elements||[]).length > 0;
+  const botBottom = hasSubs ? (subY + 24) : (Y.elem + 28);
+  const schemaSepY   = botBottom + 40;
+  const schemaRow0   = schemaSepY + 52;
+  const schemaRowGap = 58;
+  const schemaProjCX = 120, schemaProjRX = 64;
+  const schemaNodeCX = 540, schemaNodeRX = 96;
+  const schemaProjY  = schemaRow0 + (Math.max(schemaNodes.length,1)-1)*schemaRowGap/2;
+  const schemaBottom = schemaNodes.length ? (schemaRow0 + (schemaNodes.length-1)*schemaRowGap + 30) : botBottom;
+
+  // ── Altezza totale dinamica ──
+  const H = schemaBottom + 48;
 
   // ── SVG ──
   const siteRX=62, buildRX=66, buildCX=280, siteCX=80, storeyCX=490, storeyRX=72;
@@ -1352,16 +1383,16 @@ ${arrow(siteCX+siteRX, Y.site, buildCX-buildRX, 'bot:hasBuilding')}
 ${ellipse(buildCX, Y.build, buildRX, 32, C.buildFill, C.buildStroke, !d.building?.certo, 'bot:Building', d.building?.label||'—')}
 <text x="${buildCX}" y="${Y.build+50}" text-anchor="middle" font-size="9" fill="${C.muted}" font-family="Georgia,serif">L1</text>
 
-<!-- freccia building → storeys -->
-${storeys.map((s,i) => arrow(buildCX+buildRX, Y.build + (storeyCY[i]-Y.build)*0.6, storeyCX-storeyRX, i===0?'bot:hasStorey':'')).join('')}
+<!-- frecce building → storeys (diagonali, una per ciascuno storey) -->
+${storeys.map((s,i) => arrowD(buildCX+buildRX, Y.build, storeyCX-storeyRX, storeyCY[i], i===0?'bot:hasStorey':'')).join('')}
 
 <!-- ── STOREYS L2 ── -->
 ${storeys.map((s,i) => ellipse(storeyCX, storeyCY[i], storeyRX, 28, C.storeyFill, C.storeyStroke, !s.certo, 'bot:Storey', s.label||'—')).join('')}
 <text x="${storeyCX+storeyRX+10}" y="${Y.storeyBase}" font-size="9" fill="${C.muted}" font-family="Georgia,serif">L2</text>
 
 <!-- separatore -->
-<line x1="${PAD}" y1="${Y.space-40}" x2="${W-PAD}" y2="${Y.space-40}" stroke="${C.line}" stroke-width="0.5" stroke-dasharray="4 4"/>
-<text x="${W/2}" y="${Y.space-26}" text-anchor="middle" font-size="9" fill="${C.muted}" font-family="Georgia,serif">bot:Space (zone di intervento) — L3</text>
+<line x1="${PAD}" y1="${Y.space-50}" x2="${W-PAD}" y2="${Y.space-50}" stroke="${C.line}" stroke-width="0.5" stroke-dasharray="4 4"/>
+<text x="${W/2}" y="${Y.space-34}" text-anchor="middle" font-size="9" fill="${C.muted}" font-family="Georgia,serif">bot:Space (zone di intervento) — L3</text>
 
 <!-- ── SPACES ── -->
 ${spaces.map((s,i) => `
@@ -1381,6 +1412,19 @@ ${(d.sub_elements||[]).map((se,i) => {
   return arrowV(ex, Y.elem+28, subY-28, !se.certo) +
     ellipse(ex, subY, spaceRX-8, 24, se.certo?C.elemFill:C.dedFill, se.certo?C.elemStroke:C.dedStroke, !se.certo, 'bot:Element', se.label||'—');
 }).join('')}` : ''}
+
+<!-- ── SCHEMA.ORG — dati amministrativi del bando ── -->
+${schemaNodes.length ? `
+<line x1="${PAD}" y1="${schemaSepY}" x2="${W-PAD}" y2="${schemaSepY}" stroke="${C.line}" stroke-width="0.5" stroke-dasharray="4 4"/>
+<text x="${W/2}" y="${schemaSepY+16}" text-anchor="middle" font-size="9" fill="${C.muted}" font-family="Georgia,serif">schema.org — dati amministrativi del bando</text>
+${ellipse(schemaProjCX, schemaProjY, schemaProjRX, 30, C.schemaFill, C.schemaStroke, false, 'schema:Project', truncSc(c.nome))}
+<text x="${schemaProjCX}" y="${schemaProjY+48}" text-anchor="middle" font-size="8" fill="${C.muted}" font-family="Georgia,serif">schema:about → bot:Building</text>
+${schemaNodes.map((n,i)=>{
+  const ny = schemaRow0 + i*schemaRowGap;
+  return arrowD(schemaProjCX+schemaProjRX, schemaProjY, schemaNodeCX-schemaNodeRX, ny, n.prop) +
+    ellipse(schemaNodeCX, ny, schemaNodeRX, 26, C.schemaFill, C.schemaStroke, false, n.type, n.label);
+}).join('')}
+` : ''}
 
 <!-- Footer -->
 <line x1="0" y1="${H-28}" x2="${W}" y2="${H-28}" stroke="${C.line}" stroke-width="0.5"/>
