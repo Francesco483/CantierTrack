@@ -1,0 +1,69 @@
+{
+  "aggiornato": "2026-05-24T10:26:15.435141+00:00",
+  "totale": 9479,
+  "fonti": [
+    {
+      "id": "mit_bandi",
+      "nome": "MIT SCP — Bandi attivi",
+      "ente": "MIT",
+      "count": 0,
+      "ok": false
+    },
+    {
+      "id": "mit_atti_2024",
+      "nome": "MIT SCP — Atti 2024",
+      "ente": "MIT",
+      "count": 0,
+      "ok": false
+    },
+    {
+      "id": "mit_atti_2023",
+      "nome": "MIT SCP — Atti 2023",
+      "ente": "MIT",
+      "count": 9479,
+      "ok": true
+    },
+    {
+      "id": "anac_cig_2025_04",
+      "nome": "ANAC BandiCIG — Apr 2025",
+      "ente": "ANAC",
+      "count": 0,
+      "ok": false
+    },
+    {
+      "id": "anac_cig_2025_03",
+      "nome": "ANAC BandiCIG — Mar 2025",
+      "ente": "ANAC",
+      "count": 0,
+      "ok": false
+    },
+    {
+      "id": "anac_cig_2025_02",
+      "nome": "ANAC BandiCIG — Feb 2025",
+      "ente": "ANAC",
+      "count": 0,
+      "ok": false
+    },
+    {
+      "id": "anac_cig_2025_01",
+      "nome": "ANAC BandiCIG — Gen 2025",
+      "ente": "ANAC",
+      "count": 0,
+      "ok": false
+    },
+    {
+      "id": "anac_cig_2024_12",
+      "nome": "ANAC BandiCIG — Dic 2024",
+      "ente": "ANAC",
+      "count": 0,
+      "ok": false
+    },
+    {
+      "id": "anac_pnrr",
+      "nome": "ANAC — Bandi PNRR",
+      "ente": "ANAC",
+      "count": 0,
+      "ok": false
+    }
+  ]
+}

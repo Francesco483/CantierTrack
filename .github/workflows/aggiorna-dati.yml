@@ -1,0 +1,33 @@
+name: Aggiorna dati cantieri
+
+on:
+  schedule:
+    - cron: '0 6 * * *'  # Ogni giorno alle 08:00 ora italiana
+  workflow_dispatch:       # Avvio manuale dalla tab Actions
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Installa dipendenze
+        run: pip install requests
+
+      - name: Scarica dati da MIT e ANAC
+        run: python scripts/fetch_cantieri.py
+
+      - name: Commit e push automatico
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "dati: aggiorna cantieri ${{ github.run_number }}"
+          file_pattern: "data/*.json"
